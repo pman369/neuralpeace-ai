@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite3
+
+# Frontend
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Secrets
+*.pem
+*.key
+secrets/
+
+# Test coverage
+htmlcov/
+.coverage
+.coverage.*
+
+# Temporary files
+tmp/
+temp/
+PROJECT_SUMMARY.md
+QUICKSTART.md
+QWEN.md
+GEMINI.md
+IMPLEMENTATION_PLAN.md
+.gemini/
