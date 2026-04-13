@@ -5,10 +5,11 @@
   --font-headline: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
 
+  /* Default light theme colors - overridden by JS */
   --color-primary: #0058be;
   --color-primary-container: #2170e4;
   --color-on-primary: #ffffff;
-  
+
   --color-secondary: #8127cf;
   --color-secondary-container: #9c48ea;
   --color-on-secondary: #ffffff;
@@ -23,7 +24,7 @@
   --color-surface-container-high: #e6e8ea;
   --color-surface-container-highest: #e0e3e5;
   --color-surface-container-lowest: #ffffff;
-  
+
   --color-on-surface: #191c1e;
   --color-on-surface-variant: #424754;
   --color-outline: #727785;
@@ -36,8 +37,9 @@
 @layer base {
   body {
     @apply bg-surface text-on-surface font-body;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
   }

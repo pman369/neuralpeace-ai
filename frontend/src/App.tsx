@@ -5,6 +5,7 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/AuthContext';
+import { ThemeProvider } from './lib/ThemeContext';
 import TopNav from './components/TopNav';
 import ModuleLibrary from './pages/ModuleLibrary';
 import ModuleDetail from './pages/ModuleDetail';
@@ -91,11 +92,13 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <div className="bg-surface text-on-surface min-h-screen flex flex-col">
-          <AppRoutes />
-        </div>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <div className="bg-surface text-on-surface min-h-screen flex flex-col">
+            <AppRoutes />
+          </div>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

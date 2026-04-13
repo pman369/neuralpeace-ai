@@ -1,17 +1,23 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Bot, Loader2 } from 'lucide-react';
+import { Bot, Loader2, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import ChatMessageBubble from '../components/ChatMessageBubble';
 import ChatInput from '../components/ChatInput';
+import ChatHistory from '../components/ChatHistory';
 import { EXPERTISE_LEVELS } from '../constants';
 import { ExpertiseLevel } from '../types';
 import {
   ChatMessage,
+  ChatSession,
   createSessionId,
+  createChatSession,
   fetchConversationHistory,
+  fetchChatSessions,
   saveMessage,
   generateAIResponse,
+  generateAIResponseStream,
+  updateSessionMetadata,
 } from '../lib/ai';
 
 export default function ChatPage() {
@@ -22,8 +28,9 @@ export default function ChatPage() {
   const [expertiseLevel, setExpertiseLevel] = useState<ExpertiseLevel>(
     (profile?.expertise_level as ExpertiseLevel) ?? 'Expert'
   );
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const sessionId = useRef(createSessionId());
 
   // Sync expertise level from profile
   useEffect(() => {
@@ -32,25 +39,60 @@ export default function ChatPage() {
     }
   }, [profile?.expertise_level]);
 
-  // Load conversation history on mount
-  useEffect(() => {
-    async function loadHistory() {
-      const history = await fetchConversationHistory(sessionId.current);
-      if (history.length > 0) {
-        setMessages(history);
-      }
-      setLoading(false);
+  // Initialize a new session
+  const initNewSession = useCallback(async (sessionId?: string, expertise?: string) => {
+    const id = sessionId || createSessionId();
+    const level = expertise || ((profile?.expertise_level as ExpertiseLevel) ?? 'Expert');
+    setCurrentSessionId(id);
+    setExpertiseLevel(level as ExpertiseLevel);
+
+    if (!sessionId) {
+      await createChatSession(id, level);
     }
-    loadHistory();
-  }, []);
+
+    // Load history for this session
+    const history = await fetchConversationHistory(id);
+    setMessages(history);
+    setLoading(false);
+  }, [profile?.expertise_level]);
+
+  // Load sessions on mount
+  useEffect(() => {
+    async function load() {
+      const sessions = await fetchChatSessions();
+      if (sessions.length > 0) {
+        // Load most recent session
+        const latest = sessions[0];
+        await initNewSession(latest.id, latest.expertise_level);
+      } else {
+        await initNewSession();
+      }
+    }
+    load();
+  }, [initNewSession]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const handleNewChat = useCallback(() => {
+    setLoading(true);
+    sessionStorage.removeItem('chat_session_id');
+    initNewSession();
+    setHistoryOpen(false);
+  }, [initNewSession]);
+
+  const handleSelectSession = useCallback(async (sessionId: string) => {
+    setLoading(true);
+    await initNewSession(sessionId);
+    setHistoryOpen(false);
+  }, [initNewSession]);
+
   const handleSend = useCallback(
     async (content: string) => {
+      if (!currentSessionId) return;
+
       // Add user message immediately
       const userMsg: ChatMessage = {
         id: crypto.randomUUID(),
@@ -63,7 +105,25 @@ export default function ChatPage() {
 
       try {
         // Save user message to DB
-        await saveMessage(sessionId.current, 'user', content, expertiseLevel);
+        await saveMessage(currentSessionId, 'user', content, expertiseLevel);
+
+        // Update session: increment message count, set title from first message
+        const isFirstMessage = messages.length === 0;
+        await updateSessionMetadata(currentSessionId, {
+          message_count: messages.length + 2,
+          ...(isFirstMessage && { title: content.slice(0, 50) + (content.length > 50 ? '...' : '') }),
+        });
+
+        // Create a placeholder assistant message
+        const assistantMsgId = crypto.randomUUID();
+        const placeholderMsg: ChatMessage = {
+          id: assistantMsgId,
+          role: 'assistant',
+          content: '',
+          citations: [],
+          created_at: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, placeholderMsg]);
 
         // Build conversation history for AI context
         const history = messages
@@ -71,30 +131,43 @@ export default function ChatPage() {
           .map((m) => ({ role: m.role, content: m.content }));
         history.push({ role: 'user', content });
 
-        // Generate AI response
-        const response = await generateAIResponse({
+        // Generate streaming AI response
+        const stream = generateAIResponseStream({
           message: content,
           expertiseLevel,
           conversationHistory: history,
         });
 
-        // Save and display assistant response
-        const savedMsg = await saveMessage(
-          sessionId.current,
-          'assistant',
-          response.content,
-          expertiseLevel,
-          response.citations
-        );
+        let finalContent = '';
+        let finalCitations: any[] = [];
 
-        const assistantMsg: ChatMessage = {
-          id: savedMsg?.id ?? crypto.randomUUID(),
-          role: 'assistant',
-          content: response.content,
-          citations: response.citations,
-          created_at: savedMsg?.created_at ?? new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, assistantMsg]);
+        for await (const chunk of stream) {
+          if (chunk.content !== undefined) {
+            finalContent = chunk.content;
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMsgId ? { ...m, content: finalContent } : m
+              )
+            );
+          }
+          if (chunk.citations !== undefined) {
+            finalCitations = chunk.citations;
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMsgId ? { ...m, citations: finalCitations } : m
+              )
+            );
+          }
+        }
+
+        // Save the final completed message to DB
+        await saveMessage(
+          currentSessionId,
+          'assistant',
+          finalContent,
+          expertiseLevel,
+          finalCitations
+        );
       } catch (err) {
         console.error('Error generating response:', err);
         const errorMsg: ChatMessage = {
@@ -108,7 +181,7 @@ export default function ChatPage() {
         setGenerating(false);
       }
     },
-    [messages, expertiseLevel]
+    [currentSessionId, messages, expertiseLevel]
   );
 
   if (loading) {
@@ -123,10 +196,26 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col pt-16">
+    <div className="flex-1 flex flex-col pt-16 relative">
+      {/* Chat History Sidebar */}
+      <ChatHistory
+        currentSessionId={currentSessionId}
+        onSelectSession={handleSelectSession}
+        onNewChat={handleNewChat}
+        isOpen={historyOpen}
+        onToggle={() => setHistoryOpen(!historyOpen)}
+      />
+
       {/* Expertise Level Selector */}
       <div className="border-b border-outline-variant/10 bg-surface-container-low/50 px-4 py-3">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
+          <button
+            onClick={() => setHistoryOpen(!historyOpen)}
+            className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all"
+            title="Toggle conversation history"
+          >
+            {historyOpen ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          </button>
           <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
             Expertise:
           </span>
@@ -195,7 +284,6 @@ export default function ChatPage() {
             </motion.div>
           </div>
         ) : (
-          /* Message List */
           <div className="max-w-3xl mx-auto w-full px-6 py-6 space-y-6">
             <AnimatePresence>
               {messages.map((msg) => (

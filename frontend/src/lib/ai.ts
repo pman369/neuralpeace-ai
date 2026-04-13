@@ -192,6 +192,67 @@ export async function saveMessage(
 }
 
 /**
+ * Call the AI backend to generate a streaming response.
+ */
+export async function* generateAIResponseStream(
+  request: ChatRequest
+): AsyncGenerator<{ content?: string; citations?: Citation[]; done?: boolean }> {
+  try {
+    const { data, error } = await supabase.functions.invoke('chat', {
+      body: { ...request, stream: true },
+    });
+
+    if (error || !data || !(data instanceof ReadableStream)) {
+      console.warn('Edge function streaming unavailable, using fallback:', error);
+      const fallback = getFallbackResponse(request);
+      yield { content: fallback.content, citations: fallback.citations, done: true };
+      return;
+    }
+
+    const reader = data.getReader();
+    const decoder = new TextDecoder();
+    let accumulatedContent = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const jsonStr = line.replace('data: ', '').trim();
+          if (jsonStr === '[DONE]') continue;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content ?? '';
+            const citations = parsed.citations ?? [];
+
+            if (content) {
+              accumulatedContent += content;
+              yield { content: accumulatedContent };
+            }
+            if (citations.length > 0) {
+              yield { citations };
+            }
+          } catch (e) {
+            console.error('Error parsing stream chunk:', e, jsonStr);
+          }
+        }
+      }
+    }
+
+    yield { done: true };
+  } catch (err) {
+    console.error('Streaming error:', err);
+    const fallback = getFallbackResponse(request);
+    yield { content: fallback.content, citations: fallback.citations, done: true };
+  }
+}
+
+/**
  * Call the AI backend to generate a response.
  * Falls back to a mock response if the edge function is unavailable.
  */

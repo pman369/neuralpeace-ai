@@ -5,6 +5,7 @@ import Sidebar from '../components/Sidebar';
 import ModuleCard from '../components/ModuleCard';
 import CategoryFilter from '../components/CategoryFilter';
 import { Category, ExpertiseLevel, Module } from '../types';
+import { EXPERTISE_LEVELS } from '../constants';
 import { supabase } from '../lib/supabase';
 
 function mapDbModuleToModule(row: {
@@ -107,6 +108,29 @@ export default function ModuleLibrary() {
             />
           </div>
         </header>
+
+        {/* Mobile Expertise Selector (visible only on mobile/tablet) */}
+        <div className="lg:hidden mb-8 overflow-x-auto pb-2 -mx-2 px-2 flex gap-2">
+          {EXPERTISE_LEVELS.map((item) => {
+            const isActive = currentExpertise === item.level;
+            return (
+              <button
+                key={item.level}
+                onClick={() => setCurrentExpertise(item.level)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  isActive
+                    ? 'bg-primary text-on-primary shadow-md'
+                    : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]">
+                  {item.icon}
+                </span>
+                {item.level}
+              </button>
+            );
+          })}
+        </div>
 
         <CategoryFilter
           currentCategory={currentCategory}
