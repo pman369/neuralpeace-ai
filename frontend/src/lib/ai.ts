@@ -192,6 +192,45 @@ export async function saveMessage(
 }
 
 /**
+ * Fetch paper metadata from Semantic Scholar API.
+ */
+export async function fetchCitationDetails(citation: Citation) {
+  try {
+    let query = '';
+    if (citation.doi) {
+      query = `DOI:${citation.doi}`;
+    } else {
+      query = citation.title;
+    }
+
+    const response = await fetch(
+      `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(
+        query
+      )}&fields=title,authors,year,abstract,citationCount,influentialCitationCount,externalIds,venue&limit=1`
+    );
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (!data.data || data.data.length === 0) return null;
+
+    const paper = data.data[0];
+    return {
+      title: paper.title,
+      abstract: paper.abstract,
+      citationCount: paper.citationCount,
+      influentialCitationCount: paper.influentialCitationCount,
+      venue: paper.venue,
+      year: paper.year,
+      authors: paper.authors?.map((a: any) => a.name) || [],
+    };
+  } catch (error) {
+    console.error('Error fetching citation details:', error);
+    return null;
+  }
+}
+
+/**
  * Call the AI backend to generate a streaming response.
  */
 export async function* generateAIResponseStream(

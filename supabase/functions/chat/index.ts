@@ -1,5 +1,5 @@
 // Supabase Edge Function: chat
-// Handles AI-powered neuroscience Q&A with ethical guardrails, streaming, and caching
+// Handles AI-powered neuroscience Q&A with ethical guardrails, streaming, caching, and RAG
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.42.0';
 
@@ -9,6 +9,9 @@ const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
 const PERPLEXITY_MODEL = Deno.env.get('PERPLEXITY_MODEL') || 'sonar';
 
 const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
+// Initialize AI session for RAG
+const ai = new Supabase.ai.Session('gte-small');
 
 interface ChatRequest {
   message: string;
@@ -37,11 +40,13 @@ function detectMedicalAdvice(message: string): boolean {
   return MEDICAL_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-// Build system prompt based on expertise level
-function buildSystemPrompt(expertiseLevel: string, isMedical: boolean): string {
+// Build system prompt based on expertise level and context
+function buildSystemPrompt(expertiseLevel: string, isMedical: boolean, context?: string): string {
   const basePrompt = `You are NeuralPeace AI, an expert-level neuroscience assistant.
 
-Your role is to provide accurate, evidence-based educational information about neuroscience topics. You draw from peer-reviewed research and established textbooks.`;
+Your role is to provide accurate, evidence-based educational information about neuroscience topics. You draw from peer-reviewed research, established textbooks, and the specific curated knowledge base provided below.`;
+
+  const contextPrompt = context ? `\n\n**Curated Knowledge Base Context:**\n${context}\n\nUse the above context to inform your answer if relevant. If the context doesn't apply, rely on your broad training data.` : '';
 
   const expertisePrompts: Record<string, string> = {
     Novice: `
@@ -80,7 +85,7 @@ Your role is to provide accurate, evidence-based educational information about n
   const ethicalDisclaimer = `
 **Ethical Guidelines:**
 - This is an EDUCATIONAL tool, NOT a medical advisory system
-- Always emphasize that your responses are for learning purposes only
+- Always emphasize that your responses for learning purposes only
 - For health-related concerns, users should consult qualified healthcare professionals
 - Do not provide individualized medical advice`;
 
@@ -94,6 +99,7 @@ You MUST:
 
   return (
     basePrompt +
+    contextPrompt +
     (expertisePrompts[expertiseLevel] ?? expertisePrompts['Practitioner']) +
     (isMedical ? medicalWarning : '') +
     ethicalDisclaimer
@@ -123,16 +129,33 @@ serve(async (req) => {
       );
     }
 
+    // 1. RAG: Search local knowledge base
+    let context = '';
+    try {
+      const embedding = await ai.run(message, { mean_pool: true, normalize: true });
+      const { data: matches, error: matchError } = await supabase.rpc('match_module_content', {
+        query_embedding: embedding,
+        match_threshold: 0.5,
+        match_count: 3,
+      });
+
+      if (!matchError && matches) {
+        context = matches.map((m: any) => `[Module: ${m.module_title} - Section: ${m.section_title}]\n${m.content}`).join('\n\n');
+      }
+    } catch (ragError) {
+      console.warn('RAG search failed:', ragError);
+    }
+
+    // 2. Build Prompt
     const isMedical = detectMedicalAdvice(message);
-    const systemPrompt = buildSystemPrompt(expertiseLevel || 'Expert', isMedical);
+    const systemPrompt = buildSystemPrompt(expertiseLevel || 'Expert', isMedical, context);
 
     const messages = [
       { role: 'system', content: systemPrompt },
       ...(conversationHistory || []).map((m) => ({ role: m.role, content: m.content })),
     ];
 
-    // Caching logic (only for non-streaming for now, or use caching for the full response)
-    // We check cache regardless, but only serve it if it's fresh (e.g., < 24 hrs)
+    // 3. Caching logic
     const cacheKey = await getHash(`${expertiseLevel}:${message}`);
     const { data: cached } = await supabase
       .from('query_cache')
@@ -146,12 +169,10 @@ serve(async (req) => {
       const now = new Date();
       const diffHrs = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
 
-      // If fresh (< 24 hrs), return it
       if (diffHrs < 24) {
         console.log('Serving from cache:', cacheKey);
         
         if (stream) {
-          // Wrap cached response in an event-stream format
           const encoder = new TextEncoder();
           const readable = new ReadableStream({
             start(controller) {
@@ -186,7 +207,7 @@ serve(async (req) => {
       );
     }
 
-    // Call Perplexity API
+    // 4. Call Perplexity API
     const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -215,7 +236,6 @@ serve(async (req) => {
         citations: data.citations ?? [],
       };
 
-      // Save to cache
       await supabase.from('query_cache').upsert({
         query_hash: cacheKey,
         response_json: responsePayload,
@@ -230,7 +250,7 @@ serve(async (req) => {
       });
     }
 
-    // Setup streaming
+    // 5. Setup streaming
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
     const reader = perplexityResponse.body?.getReader();
@@ -239,20 +259,18 @@ serve(async (req) => {
       throw new Error('Failed to get reader from Perplexity response');
     }
 
-    // Process stream in background
     (async () => {
       let fullContent = '';
       let citations = [];
 
       try {
-        const encoder = new TextEncoder();
         const decoder = new TextDecoder();
         
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           
-          const chunk = decoder.decode(value);
+          const chunk = decoder.decode(value, { stream: true });
           const lines = chunk.split('\n');
           for (const line of lines) {
             if (line.startsWith('data: ')) {
@@ -269,7 +287,6 @@ serve(async (req) => {
           await writer.write(value);
         }
 
-        // Save full response to cache after stream ends
         await supabase.from('query_cache').upsert({
           query_hash: cacheKey,
           response_json: { content: fullContent, citations },

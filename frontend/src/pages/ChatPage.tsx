@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Bot, Loader2, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
+import { Bot, Loader2, PanelLeftOpen, PanelLeftClose, Box } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import ChatMessageBubble from '../components/ChatMessageBubble';
 import ChatInput from '../components/ChatInput';
 import ChatHistory from '../components/ChatHistory';
+import CitationPanel from '../components/CitationPanel';
+import BrainAtlas, { BrainRegion } from '../components/BrainAtlas';
 import { EXPERTISE_LEVELS } from '../constants';
 import { ExpertiseLevel } from '../types';
 import {
   ChatMessage,
   ChatSession,
+  Citation,
   createSessionId,
   createChatSession,
   fetchConversationHistory,
@@ -30,7 +33,33 @@ export default function ChatPage() {
   );
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [atlasOpen, setAtlasOpen] = useState(false);
+  const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
+  const [highlightRegion, setHighlightRegion] = useState<BrainRegion>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Simple keyword detection to highlight brain regions
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === 'assistant') {
+        const content = lastMessage.content.toLowerCase();
+        if (content.includes('frontal') || content.includes('executive') || content.includes('prefrontal')) {
+          setHighlightRegion('Frontal');
+        } else if (content.includes('parietal') || content.includes('sensory') || content.includes('spatial')) {
+          setHighlightRegion('Parietal');
+        } else if (content.includes('temporal') || content.includes('auditory') || content.includes('language')) {
+          setHighlightRegion('Temporal');
+        } else if (content.includes('occipital') || content.includes('visual') || content.includes('vision')) {
+          setHighlightRegion('Occipital');
+        } else if (content.includes('cerebellum') || content.includes('motor') || content.includes('coordination')) {
+          setHighlightRegion('Cerebellum');
+        } else {
+          setHighlightRegion(null);
+        }
+      }
+    }
+  }, [messages]);
 
   // Sync expertise level from profile
   useEffect(() => {
@@ -206,114 +235,161 @@ export default function ChatPage() {
         onToggle={() => setHistoryOpen(!historyOpen)}
       />
 
-      {/* Expertise Level Selector */}
+      {/* Expertise Level Selector & Atlas Toggle */}
       <div className="border-b border-outline-variant/10 bg-surface-container-low/50 px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
-          <button
-            onClick={() => setHistoryOpen(!historyOpen)}
-            className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all"
-            title="Toggle conversation history"
-          >
-            {historyOpen ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-          </button>
-          <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-            Expertise:
-          </span>
-          <div className="flex gap-1.5 overflow-x-auto">
-            {EXPERTISE_LEVELS.map((item) => {
-              const isActive = item.level === expertiseLevel;
-              return (
-                <button
-                  key={item.level}
-                  onClick={() => setExpertiseLevel(item.level)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
-                    isActive
-                      ? 'bg-primary text-on-primary shadow-sm'
-                      : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[12px] align-middle mr-1">
-                    {item.icon}
-                  </span>
-                  {item.level}
-                </button>
-              );
-            })}
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
+            <button
+              onClick={() => setHistoryOpen(!historyOpen)}
+              className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-lg transition-all flex-shrink-0"
+              title="Toggle conversation history"
+            >
+              {historyOpen ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+            </button>
+            <span className="text-[10px] font-bold text-outline uppercase tracking-wider hidden sm:inline flex-shrink-0">
+              Expertise
+            </span>
+            <div className="flex gap-1.5">
+              {EXPERTISE_LEVELS.map((item) => {
+                const isActive = item.level === expertiseLevel;
+                return (
+                  <button
+                    key={item.level}
+                    onClick={() => setExpertiseLevel(item.level)}
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-primary text-on-primary shadow-sm'
+                        : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[14px]">
+                      {item.icon}
+                    </span>
+                    {item.level}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          <button
+            onClick={() => setAtlasOpen(!atlasOpen)}
+            className={`p-1.5 rounded-lg transition-all flex items-center gap-2 px-3 flex-shrink-0 ${
+              atlasOpen 
+                ? 'bg-secondary text-on-secondary shadow-md' 
+                : 'text-on-surface-variant hover:bg-surface-container-high border border-outline-variant/20'
+            }`}
+          >
+            <Box size={16} />
+            <span className="text-[11px] font-bold uppercase tracking-tight hidden xs:inline">3D Atlas</span>
+          </button>
         </div>
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
-        {messages.length === 0 ? (
-          /* Empty State */
-          <div className="flex flex-col items-center justify-center h-full px-6">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center max-w-lg"
-            >
-              <div className="w-16 h-16 bg-secondary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Bot size={32} className="text-secondary" />
-              </div>
-              <h2 className="text-2xl font-bold text-on-surface font-headline mb-3">
-                Neuroscience AI Assistant
-              </h2>
-              <p className="text-on-surface-variant leading-relaxed mb-8">
-                Ask me anything about neuroscience — from basic neuroanatomy to cutting-edge research.
-                I'll adapt my responses to your expertise level.
-              </p>
-
-              {/* Suggested Questions */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
-                {[
-                  'What is a neuron?',
-                  'Explain long-term potentiation',
-                  'How does fMRI work?',
-                  'What are the ethical implications of BCIs?',
-                ].map((q) => (
-                  <button
-                    key={q}
-                    onClick={() => handleSend(q)}
-                    className="px-4 py-3 bg-surface-container-lowest border border-outline-variant/15 rounded-xl text-sm text-on-surface-variant hover:border-primary/40 hover:text-primary transition-all"
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        ) : (
-          <div className="max-w-3xl mx-auto w-full px-6 py-6 space-y-6">
-            <AnimatePresence>
-              {messages.map((msg) => (
-                <ChatMessageBubble key={msg.id} message={msg} />
-              ))}
-            </AnimatePresence>
-
-            {/* Typing Indicator */}
-            {generating && (
+      {/* Main Content Area: Messages + Optional Atlas */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Messages Area */}
+        <div className={`flex-1 flex flex-col overflow-y-auto transition-all duration-500 ${atlasOpen ? 'lg:pr-4' : ''}`}>
+          {messages.length === 0 ? (
+            /* Empty State */
+            <div className="flex flex-col items-center justify-center h-full px-6">
               <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex gap-4"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center max-w-lg"
               >
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary text-on-secondary flex items-center justify-center">
-                  <Bot size={16} />
+                <div className="w-16 h-16 bg-secondary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Bot size={32} className="text-secondary" />
                 </div>
-                <div className="bg-surface-container-lowest border border-outline-variant/15 rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-2">
-                  <Loader2 size={16} className="animate-spin text-secondary" />
-                  <span className="text-sm text-on-surface-variant">Thinking...</span>
+                <h2 className="text-2xl font-bold text-on-surface font-headline mb-3">
+                  Neuroscience AI Assistant
+                </h2>
+                <p className="text-on-surface-variant leading-relaxed mb-8 text-sm">
+                  Ask me anything about neuroscience — from basic neuroanatomy to cutting-edge research.
+                  I'll adapt my responses to your expertise level.
+                </p>
+
+                {/* Suggested Questions */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
+                  {[
+                    'What is a neuron?',
+                    'Explain long-term potentiation',
+                    'How does fMRI work?',
+                    'Function of the Prefrontal Cortex',
+                  ].map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => handleSend(q)}
+                      className="px-4 py-3 bg-surface-container-lowest border border-outline-variant/15 rounded-xl text-xs text-on-surface-variant hover:border-primary/40 hover:text-primary transition-all font-medium"
+                    >
+                      {q}
+                    </button>
+                  ))}
                 </div>
               </motion.div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="max-w-3xl mx-auto w-full px-6 py-6 space-y-6">
+              <AnimatePresence>
+                {messages.map((msg) => (
+                  <ChatMessageBubble 
+                    key={msg.id} 
+                    message={msg} 
+                    onCitationClick={setSelectedCitation}
+                  />
+                ))}
+              </AnimatePresence>
+
+              {/* Typing Indicator */}
+              {generating && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex gap-4"
+                >
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary text-on-secondary flex items-center justify-center">
+                    <Bot size={16} />
+                  </div>
+                  <div className="bg-surface-container-lowest border border-outline-variant/15 rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-2">
+                    <Loader2 size={16} className="animate-spin text-secondary" />
+                    <span className="text-sm text-on-surface-variant">Thinking...</span>
+                  </div>
+                </motion.div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        {/* Brain Atlas Sidebar */}
+        <AnimatePresence>
+          {atlasOpen && (
+            <motion.div
+              initial={{ opacity: 0, width: 0, x: 20 }}
+              animate={{ opacity: 1, width: '40%', x: 0 }}
+              exit={{ opacity: 0, width: 0, x: 20 }}
+              className="hidden lg:block h-full border-l border-outline-variant/10 bg-surface-container-lowest/30 p-4"
+            >
+              <BrainAtlas highlightRegion={highlightRegion} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Input Area */}
-      <ChatInput onSend={handleSend} disabled={generating} />
+      <div className="max-w-5xl mx-auto w-full">
+        <ChatInput onSend={handleSend} disabled={generating} />
+      </div>
+
+      {/* Citation Details Panel */}
+      <AnimatePresence>
+        {selectedCitation && (
+          <CitationPanel
+            citation={selectedCitation}
+            onClose={() => setSelectedCitation(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

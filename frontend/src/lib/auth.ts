@@ -4,11 +4,17 @@ import { supabase } from './supabase';
  * Send a magic link to the user's email.
  * Redirects to the current URL after clicking the link.
  */
-export async function sendMagicLink(email: string): Promise<{ error: string | null }> {
+export async function sendMagicLink(
+  email: string,
+  expertiseLevel?: string
+): Promise<{ error: string | null }> {
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       emailRedirectTo: window.location.origin,
+      data: {
+        expertise_level: expertiseLevel ?? 'Expert',
+      },
     },
   });
   return { error: error?.message ?? null };

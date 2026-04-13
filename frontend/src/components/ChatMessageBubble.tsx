@@ -6,9 +6,10 @@ import type { ChatMessage, Citation } from '../lib/ai';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
+  onCitationClick?: (citation: Citation) => void;
 }
 
-const ChatMessageBubble: FC<ChatMessageBubbleProps> = memo(({ message }) => {
+const ChatMessageBubble: FC<ChatMessageBubbleProps> = memo(({ message, onCitationClick }) => {
   const isUser = message.role === 'user';
 
   return (
@@ -54,7 +55,11 @@ const ChatMessageBubble: FC<ChatMessageBubbleProps> = memo(({ message }) => {
             </div>
             <div className="space-y-1.5">
               {message.citations.map((citation, idx) => (
-                <CitationItem key={idx} citation={citation} />
+                <CitationItem 
+                  key={idx} 
+                  citation={citation} 
+                  onClick={() => onCitationClick?.(citation)}
+                />
               ))}
             </div>
           </div>
@@ -78,29 +83,30 @@ export default ChatMessageBubble;
 
 interface CitationItemProps {
   citation: Citation;
+  onClick?: () => void;
 }
 
-const CitationItem: FC<CitationItemProps> = memo(({ citation }) => {
+const CitationItem: FC<CitationItemProps> = memo(({ citation, onClick }) => {
   return (
-    <div className="flex items-start gap-2 text-sm text-on-surface-variant bg-surface-container-low rounded-lg px-3 py-2">
+    <button
+      onClick={onClick}
+      className="w-full flex items-start gap-2 text-left text-sm text-on-surface-variant bg-surface-container-low hover:bg-surface-container-high active:scale-[0.98] transition-all rounded-lg px-3 py-2 border border-transparent hover:border-primary/20 group"
+    >
       <span className="text-primary font-bold text-xs mt-0.5 flex-shrink-0">
         [{citation.year ?? 'n.d.'}]
       </span>
       <div className="flex-1 min-w-0">
-        <p className="truncate">{citation.title}</p>
-        {citation.doi && (
-          <a
-            href={`https://doi.org/${citation.doi}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-0.5"
-          >
-            DOI: {citation.doi}
-            <ExternalLink size={10} />
-          </a>
-        )}
+        <p className="truncate group-hover:text-primary transition-colors">{citation.title}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-[10px] font-bold text-outline uppercase tracking-tight">Click for details</span>
+          {citation.doi && (
+            <span className="text-[10px] text-primary/60 truncate flex items-center gap-0.5">
+              DOI: {citation.doi}
+            </span>
+          )}
+        </div>
       </div>
-    </div>
+    </button>
   );
 });
 
