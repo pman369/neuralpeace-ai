@@ -1,5 +1,5 @@
 // Supabase Edge Function: chat
-// Handles AI-powered neuroscience Q&A with ethical guardrails, streaming, caching, and RAG
+// Handles AI-powered neuroscience Q&A with ethical guardrails, streaming, caching, and keyword-based RAG
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.42.0';
 
@@ -9,9 +9,6 @@ const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
 const PERPLEXITY_MODEL = Deno.env.get('PERPLEXITY_MODEL') || 'sonar';
 
 const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-
-// Initialize AI session for RAG
-const ai = new Supabase.ai.Session('gte-small');
 
 interface ChatRequest {
   message: string;
@@ -107,7 +104,6 @@ You MUST:
 }
 
 serve(async (req) => {
-  // CORS handling
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
@@ -129,21 +125,20 @@ serve(async (req) => {
       );
     }
 
-    // 1. RAG: Search local knowledge base
+    // 1. Keyword-based RAG: Search local knowledge base
     let context = '';
     try {
-      const embedding = await ai.run(message, { mean_pool: true, normalize: true });
-      const { data: matches, error: matchError } = await supabase.rpc('match_module_content', {
-        query_embedding: embedding,
-        match_threshold: 0.5,
+      const { data: matches, error: matchError } = await supabase.rpc('keyword_match_module_content', {
+        query_text: message,
         match_count: 3,
       });
 
-      if (!matchError && matches) {
-        context = matches.map((m: any) => `[Module: ${m.module_title} - Section: ${m.section_title}]\n${m.content}`).join('\n\n');
+      if (!matchError && matches && matches.length > 0) {
+        context = matches.map((m: any) => `[Topic: ${m.section_title}]\n${m.content_md}`).join('\n\n');
+        console.log(`Found ${matches.length} context sections via keyword search.`);
       }
     } catch (ragError) {
-      console.warn('RAG search failed:', ragError);
+      console.warn('Keyword RAG search failed:', ragError);
     }
 
     // 2. Build Prompt
@@ -153,6 +148,7 @@ serve(async (req) => {
     const messages = [
       { role: 'system', content: systemPrompt },
       ...(conversationHistory || []).map((m) => ({ role: m.role, content: m.content })),
+      { role: 'user', content: message },
     ];
 
     // 3. Caching logic
@@ -162,16 +158,14 @@ serve(async (req) => {
       .select('response_json, created_at')
       .eq('query_hash', cacheKey)
       .eq('expertise_level', expertiseLevel)
-      .single();
+      .maybeSingle();
 
     if (cached) {
       const createdAt = new Date(cached.created_at);
-      const now = new Date();
-      const diffHrs = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+      const diffHrs = (new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60);
 
       if (diffHrs < 24) {
         console.log('Serving from cache:', cacheKey);
-        
         if (stream) {
           const encoder = new TextEncoder();
           const readable = new ReadableStream({
@@ -188,26 +182,21 @@ serve(async (req) => {
             headers: { 'Content-Type': 'text/event-stream', 'Access-Control-Allow-Origin': '*' }
           });
         }
-
-        return new Response(JSON.stringify({
-          ...cached.response_json,
-          isMedical,
-          cached: true,
-        }), {
+        return new Response(JSON.stringify({ ...cached.response_json, isMedical, cached: true }), {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
       }
     }
 
     if (!PERPLEXITY_API_KEY) {
-      const fallbackMsg = `I'd love to help with your question about "${message}", but the AI backend isn't fully configured yet. Please set the PERPLEXITY_API_KEY environment variable in your Supabase project settings.\n\nIn the meantime, try exploring our Knowledge Base modules for curated neuroscience content!`;
       return new Response(
-        JSON.stringify({ content: fallbackMsg, citations: [], fallback: true }),
-        { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+        JSON.stringify({ error: 'Perplexity API key not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     // 4. Call Perplexity API
+    console.log('Calling Perplexity API...');
     const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -219,7 +208,6 @@ serve(async (req) => {
         messages,
         temperature: 0.3,
         max_tokens: 2000,
-        return_citations: true,
         stream: stream,
       }),
     });
@@ -240,61 +228,64 @@ serve(async (req) => {
         query_hash: cacheKey,
         response_json: responsePayload,
         expertise_level: expertiseLevel,
-      });
+      }, { onConflict: 'query_hash' });
 
-      return new Response(JSON.stringify({
-        ...responsePayload,
-        isMedical,
-      }), {
+      return new Response(JSON.stringify({ ...responsePayload, isMedical }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
     }
 
     // 5. Setup streaming
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
     const reader = perplexityResponse.body?.getReader();
 
-    if (!reader) {
-      throw new Error('Failed to get reader from Perplexity response');
-    }
+    if (!reader) throw new Error('Failed to get reader from Perplexity response');
 
     (async () => {
       let fullContent = '';
       let citations = [];
+      let buffer = '';
 
       try {
-        const decoder = new TextDecoder();
-        
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const jsonStr = line.replace('data: ', '').trim();
-              if (jsonStr === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(jsonStr);
-                fullContent += parsed.choices?.[0]?.delta?.content ?? '';
-                if (parsed.citations) citations = parsed.citations;
-              } catch (e) { /* ignore parse errors in streaming */ }
-            }
-          }
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
 
-          await writer.write(value);
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
+            
+            const jsonStr = trimmedLine.replace('data: ', '');
+            if (jsonStr === '[DONE]') {
+              await writer.write(encoder.encode('data: [DONE]\n\n'));
+              continue;
+            }
+
+            try {
+              const parsed = JSON.parse(jsonStr);
+              fullContent += parsed.choices?.[0]?.delta?.content ?? '';
+              if (parsed.citations) citations = parsed.citations;
+              await writer.write(encoder.encode(`data: ${JSON.stringify(parsed)}\n\n`));
+            } catch (e) { /* partial JSON */ }
+          }
         }
 
-        await supabase.from('query_cache').upsert({
-          query_hash: cacheKey,
-          response_json: { content: fullContent, citations },
-          expertise_level: expertiseLevel,
-        });
-
+        if (fullContent) {
+          await supabase.from('query_cache').upsert({
+            query_hash: cacheKey,
+            response_json: { content: fullContent, citations },
+            expertise_level: expertiseLevel,
+          }, { onConflict: 'query_hash' });
+        }
       } catch (err) {
-        console.error('Stream processing error:', err);
+        console.error('Stream error:', err);
       } finally {
         writer.close();
       }
@@ -311,9 +302,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Chat function error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message ?? 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-    );
+    return new Response(JSON.stringify({ error: error.message }), { 
+      status: 500, 
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+    });
   }
 });

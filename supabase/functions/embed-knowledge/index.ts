@@ -1,6 +1,4 @@
 // Supabase Edge Function: embed-knowledge
-// Generates embeddings for knowledge base content using Supabase AI
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.42.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -8,11 +6,11 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-// Initialize the AI session (gte-small is built-in)
+// Initialize the model once
+// @ts-ignore
 const model = new Supabase.ai.Session('gte-small');
 
-serve(async (req) => {
-  // CORS handling
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
@@ -24,53 +22,46 @@ serve(async (req) => {
   }
 
   try {
-    const { action } = await req.json();
+    const { action, sectionId } = await req.json();
 
     if (action === 'sync') {
-      // 1. Fetch all module content without embeddings
       const { data: sections, error: fetchError } = await supabase
         .from('module_content')
         .select('id, content_md')
-        .order('id');
+        .eq('id', sectionId);
 
       if (fetchError) throw fetchError;
-
-      let syncedCount = 0;
-
-      // 2. Generate embeddings and update
-      for (const section of sections || []) {
-        // Simple cleaning of markdown
-        const text = section.content_md.replace(/[#*`]/g, '').trim();
-        
-        // Generate embedding
-        const embedding = await model.run(text, { mean_pool: true, normalize: true });
-
-        // Update database
-        const { error: updateError } = await supabase
-          .from('module_embeddings')
-          .upsert({
-            content_id: section.id,
-            embedding: embedding,
-          });
-
-        if (!updateError) syncedCount++;
+      if (!sections || sections.length === 0) {
+        return new Response(JSON.stringify({ success: true, syncedCount: 0 }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        });
       }
 
-      return new Response(JSON.stringify({ success: true, syncedCount }), {
+      const section = sections[0];
+      // Limit text to 500 chars for testing if it's a size issue
+      const text = section.content_md.replace(/[#*`]/g, '').trim().substring(0, 1000);
+      
+      const embedding = await model.run(text, { mean_pool: true, normalize: true });
+
+      const { error: upsertError } = await supabase
+        .from('module_embeddings')
+        .upsert({
+          content_id: section.id,
+          embedding: embedding,
+        }, { onConflict: 'content_id' });
+
+      if (upsertError) throw upsertError;
+
+      return new Response(JSON.stringify({ success: true, syncedCount: 1 }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid action' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-    });
-
+    return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 });
   } catch (error) {
-    console.error('Embed function error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message ?? 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-    );
+    return new Response(JSON.stringify({ error: error.message }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
   }
 });
