@@ -24,7 +24,7 @@ import {
 } from '../lib/ai';
 
 export default function ChatPage() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -70,20 +70,25 @@ export default function ChatPage() {
 
   // Initialize a new session
   const initNewSession = useCallback(async (sessionId?: string, expertise?: string) => {
-    const id = sessionId || createSessionId();
-    const level = expertise || ((profile?.expertise_level as ExpertiseLevel) ?? 'Expert');
-    setCurrentSessionId(id);
-    setExpertiseLevel(level as ExpertiseLevel);
+    try {
+      const id = sessionId || createSessionId();
+      const level = expertise || ((profile?.expertise_level as ExpertiseLevel) ?? 'Expert');
+      setCurrentSessionId(id);
+      setExpertiseLevel(level as ExpertiseLevel);
 
-    if (!sessionId) {
-      await createChatSession(id, level);
+      if (!sessionId) {
+        await createChatSession(id, level, undefined, user?.id);
+      }
+
+      // Load history for this session
+      const history = await fetchConversationHistory(id);
+      setMessages(history);
+    } catch (err) {
+      console.error('Error initializing session:', err);
+    } finally {
+      setLoading(false);
     }
-
-    // Load history for this session
-    const history = await fetchConversationHistory(id);
-    setMessages(history);
-    setLoading(false);
-  }, [profile?.expertise_level]);
+  }, [profile?.expertise_level, user?.id]);
 
   // Load sessions on mount
   useEffect(() => {

@@ -54,7 +54,8 @@ export function createSessionId(): string {
 export async function createChatSession(
   sessionId: string,
   expertiseLevel: string,
-  title?: string
+  title?: string,
+  userId?: string
 ): Promise<string> {
   const { data, error } = await supabase
     .from('chat_sessions')
@@ -63,6 +64,7 @@ export async function createChatSession(
       title: title ?? 'New Conversation',
       expertise_level: expertiseLevel,
       message_count: 0,
+      user_id: userId,
     })
     .select('id')
     .single();
