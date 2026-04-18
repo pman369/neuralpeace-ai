@@ -125,20 +125,45 @@ serve(async (req) => {
       );
     }
 
-    // 1. Keyword-based RAG: Search local knowledge base
+    // 1. Hybrid RAG: Semantic search + Keyword fallback/boost
     let context = '';
     try {
-      const { data: matches, error: matchError } = await supabase.rpc('keyword_match_module_content', {
-        query_text: message,
-        match_count: 3,
-      });
+      // @ts-ignore
+      const model = new Supabase.ai.Session('gte-small');
+      const queryEmbedding = await model.run(message, { mean_pool: true, normalize: true });
+      
+      const [semanticRes, keywordRes] = await Promise.all([
+        supabase.rpc('match_module_embeddings', {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.65,
+          match_count: 3
+        }),
+        supabase.rpc('keyword_match_module_content', {
+          query_text: message,
+          match_count: 2
+        })
+      ]);
 
-      if (!matchError && matches && matches.length > 0) {
-        context = matches.map((m: any) => `[Topic: ${m.section_title}]\n${m.content_md}`).join('\n\n');
-        console.log(`Found ${matches.length} context sections via keyword search.`);
+      const ragResults = new Map<string, string>();
+
+      if (!semanticRes.error && semanticRes.data) {
+        semanticRes.data.forEach((m: any) => {
+          ragResults.set(m.section_title, `[Topic: ${m.section_title}] (Relevance: ${(m.similarity * 100).toFixed(1)}%)\n${m.content_md}`);
+        });
       }
+
+      if (!keywordRes.error && keywordRes.data) {
+        keywordRes.data.forEach((m: any) => {
+          if (!ragResults.has(m.section_title)) {
+            ragResults.set(m.section_title, `[Topic: ${m.section_title}] (Keyword Match)\n${m.content_md}`);
+          }
+        });
+      }
+
+      context = Array.from(ragResults.values()).join('\n\n');
+      console.log(`RAG context length: ${context.length} characters.`);
     } catch (ragError) {
-      console.warn('Keyword RAG search failed:', ragError);
+      console.warn('Hybrid RAG search failed:', ragError);
     }
 
     // 2. Build Prompt

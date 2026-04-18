@@ -12,6 +12,7 @@ import ModuleDetail from './pages/ModuleDetail';
 import ChatPage from './pages/ChatPage';
 import OnboardingPage from './pages/OnboardingPage';
 import SettingsPage from './pages/SettingsPage';
+import ErrorBoundary from './components/ErrorBoundary';
 
 /**
  * Route guard: redirects to /auth if user is not authenticated.
@@ -94,9 +95,11 @@ export default function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <div className="bg-surface text-on-surface min-h-screen flex flex-col">
-            <AppRoutes />
-          </div>
+          <ErrorBoundary>
+            <div className="bg-surface text-on-surface min-h-screen flex flex-col">
+              <AppRoutes />
+            </div>
+          </ErrorBoundary>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
