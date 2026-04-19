@@ -1,12 +1,16 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bot, Loader2, PanelLeftOpen, PanelLeftClose, Box } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import ChatMessageBubble from '../components/ChatMessageBubble';
 import ChatInput from '../components/ChatInput';
 import ChatHistory from '../components/ChatHistory';
-import CitationPanel from '../components/CitationPanel';
-import BrainAtlas, { BrainRegion } from '../components/BrainAtlas';
+
+// Lazy load heavy interactive components
+const BrainAtlas = lazy(() => import('../components/BrainAtlas'));
+const CitationPanel = lazy(() => import('../components/CitationPanel'));
+
+import { BrainRegion } from '../components/BrainAtlas';
 import { EXPERTISE_LEVELS } from '../constants';
 import { ExpertiseLevel } from '../types';
 import {
@@ -375,7 +379,16 @@ export default function ChatPage() {
               exit={{ opacity: 0, width: 0, x: 20 }}
               className="hidden lg:block h-full border-l border-outline-variant/10 bg-surface-container-lowest/30 p-4"
             >
-              <BrainAtlas highlightRegion={highlightRegion} />
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-full">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 size={16} className="animate-spin text-on-surface-variant" />
+                    <span className="text-[10px] uppercase font-bold text-on-surface-variant">Loading 3D Atlas...</span>
+                  </div>
+                </div>
+              }>
+                <BrainAtlas highlightRegion={highlightRegion} />
+              </Suspense>
             </motion.div>
           )}
         </AnimatePresence>
@@ -389,10 +402,12 @@ export default function ChatPage() {
       {/* Citation Details Panel */}
       <AnimatePresence>
         {selectedCitation && (
-          <CitationPanel
-            citation={selectedCitation}
-            onClose={() => setSelectedCitation(null)}
-          />
+          <Suspense fallback={null}>
+            <CitationPanel
+              citation={selectedCitation}
+              onClose={() => setSelectedCitation(null)}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
     </div>
