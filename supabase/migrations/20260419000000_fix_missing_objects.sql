@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS public.query_cache (
 CREATE INDEX IF NOT EXISTS idx_query_cache_hash ON public.query_cache(query_hash);
 
 -- Create keyword_match_module_content for hybrid search
+DROP FUNCTION IF EXISTS public.keyword_match_module_content(TEXT, INT);
 CREATE OR REPLACE FUNCTION public.keyword_match_module_content(
   query_text TEXT,
   match_count INT

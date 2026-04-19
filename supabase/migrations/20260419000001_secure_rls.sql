@@ -22,7 +22,7 @@ CREATE POLICY "Users can view messages from their sessions"
   USING (
     EXISTS (
       SELECT 1 FROM public.chat_sessions s
-      WHERE s.id::text = public.chat_messages.session_id
+      WHERE s.id = public.chat_messages.session_id
       AND s.user_id = auth.uid()
     )
   );
@@ -33,7 +33,7 @@ CREATE POLICY "Users can insert messages into their sessions"
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.chat_sessions s
-      WHERE s.id::text = public.chat_messages.session_id
+      WHERE s.id = public.chat_messages.session_id
       AND s.user_id = auth.uid()
     )
   );
@@ -44,14 +44,14 @@ CREATE POLICY "Users can update their own messages"
   USING (
     EXISTS (
       SELECT 1 FROM public.chat_sessions s
-      WHERE s.id::text = public.chat_messages.session_id
+      WHERE s.id = public.chat_messages.session_id
       AND s.user_id = auth.uid()
     )
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.chat_sessions s
-      WHERE s.id::text = public.chat_messages.session_id
+      WHERE s.id = public.chat_messages.session_id
       AND s.user_id = auth.uid()
     )
   );
