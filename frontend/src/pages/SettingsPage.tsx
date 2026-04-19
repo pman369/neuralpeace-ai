@@ -1,9 +1,9 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Save, Loader2, User, Mail, BookOpen, LogOut, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, User, Mail, BookOpen, LogOut, Trash2, ShieldLock, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import { updateProfile, updateExpertiseLevel } from '../lib/auth';
+import { updateProfile, updateExpertiseLevel, resetPassword } from '../lib/auth';
 import { EXPERTISE_LEVELS } from '../constants';
 import { ExpertiseLevel } from '../types';
 
@@ -16,6 +16,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -49,6 +51,19 @@ export default function SettingsPage() {
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handlePasswordReset = async () => {
+    if (!user?.email) return;
+    setResetLoading(true);
+    const { error: resetError } = await resetPassword(user.email);
+    if (resetError) {
+      setError(resetError);
+    } else {
+      setResetSent(true);
+      setTimeout(() => setResetSent(false), 5000);
+    }
+    setResetLoading(false);
   };
 
   if (!user) {
@@ -178,17 +193,33 @@ export default function SettingsPage() {
             </form>
           </section>
 
-          {/* Account Section */}
+          {/* Account & Security Section */}
           <section className="bg-surface-container-lowest rounded-2xl border border-outline-variant/15 p-6 mb-6">
             <h2 className="text-lg font-bold text-on-surface font-headline mb-4 flex items-center gap-2">
-              <BookOpen size={18} className="text-primary" />
-              Account
+              <ShieldLock size={18} className="text-primary" />
+              Security
             </h2>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
+              <div className="p-4 bg-surface-container-low rounded-xl border border-outline-variant/10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-on-surface">Password</h3>
+                    <p className="text-xs text-on-surface-variant">Update your security credentials</p>
+                  </div>
+                  <button
+                    onClick={handlePasswordReset}
+                    disabled={resetLoading || resetSent}
+                    className="flex items-center gap-2 px-4 py-2 bg-surface-container-lowest border border-outline-variant/20 rounded-lg text-xs font-bold text-primary hover:bg-primary/5 transition-all"
+                  >
+                    {resetLoading ? <Loader2 size={14} className="animate-spin" /> : resetSent ? 'Email Sent!' : 'Reset Password'}
+                  </button>
+                </div>
+              </div>
+
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-surface-container-high rounded-xl text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all text-sm font-medium"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-red-500/5 text-red-600 hover:bg-red-500/10 rounded-xl transition-all text-sm font-bold border border-red-500/10"
               >
                 <LogOut size={16} />
                 Sign out

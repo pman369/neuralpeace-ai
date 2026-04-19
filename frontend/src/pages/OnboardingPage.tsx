@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Brain, Mail, Loader2, ArrowLeft, Sparkles, ChevronRight, CheckCircle2 } from 'lucide-react';
-import { sendMagicLink } from '../lib/auth';
+import { Brain, Mail, Loader2, ArrowLeft, Sparkles, ChevronRight, CheckCircle2, Lock, Key, UserPlus, LogIn } from 'lucide-react';
+import { sendMagicLink, signUpWithPassword, signInWithPassword } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { ExpertiseLevel } from '../types';
 
@@ -21,6 +21,9 @@ type Step = 'welcome' | 'quiz' | 'result' | 'email' | 'sent';
 export default function OnboardingPage({ onBack }: OnboardingPageProps) {
   const [step, setStep] = useState<Step>('welcome');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authMethod, setAuthMethod] = useState<'magic' | 'password'>('magic');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -65,18 +68,32 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
     }
   };
 
-  const handleEmailSubmit = async (e: FormEvent) => {
+  const handleAuthSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
 
     setSending(true);
     setError(null);
 
-    const { error: err } = await sendMagicLink(email.trim(), finalLevel);
-    if (err) {
-      setError(err);
+    let result;
+    if (authMethod === 'magic') {
+      result = await sendMagicLink(email.trim(), finalLevel);
+      if (!result.error) setStep('sent');
     } else {
-      setStep('sent');
+      if (authMode === 'signup') {
+        if (password.length < 6) {
+          setError('Password must be at least 6 characters');
+          setSending(false);
+          return;
+        }
+        result = await signUpWithPassword(email.trim(), password, finalLevel);
+      } else {
+        result = await signInWithPassword(email.trim(), password);
+      }
+    }
+
+    if (result?.error) {
+      setError(result.error);
     }
     setSending(false);
   };
@@ -216,7 +233,7 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
             </motion.div>
           )}
 
-          {/* STEP: EMAIL */}
+          {/* STEP: EMAIL / AUTH */}
           {step === 'email' && (
             <motion.div
               key="email"
@@ -228,41 +245,131 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
             >
               <div className="mb-6">
                 <h2 className="text-2xl font-extrabold text-on-surface font-headline mb-2">
-                  Almost there
+                  {authMethod === 'magic' ? 'Almost there' : authMode === 'signup' ? 'Create Account' : 'Welcome Back'}
                 </h2>
                 <p className="text-on-surface-variant text-sm leading-relaxed">
-                  Sign in with a magic link. We'll save your **{finalLevel}** expertise level to your profile.
+                  {authMethod === 'magic' 
+                    ? `Sign in with a magic link. We'll save your ${finalLevel} expertise level.`
+                    : authMode === 'signup' 
+                      ? `Secure your profile with a password. Your ${finalLevel} level will be saved.`
+                      : 'Enter your credentials to continue your research.'}
                 </p>
               </div>
-              <form onSubmit={handleEmailSubmit}>
-                <div className="mb-6">
-                  <label htmlFor="email" className="block text-sm font-medium text-on-surface mb-1.5">
-                    Email address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <Mail size={16} className="text-outline" />
+
+              {/* Auth Method Toggle */}
+              <div className="flex p-1 bg-surface-container-low rounded-xl mb-6">
+                <button
+                  onClick={() => {
+                    setAuthMethod('magic');
+                    setError(null);
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
+                    authMethod === 'magic' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  <Sparkles size={14} /> Magic Link
+                </button>
+                <button
+                  onClick={() => {
+                    setAuthMethod('password');
+                    setError(null);
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
+                    authMethod === 'password' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  <Lock size={14} /> Password
+                </button>
+              </div>
+
+              <form onSubmit={handleAuthSubmit}>
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label htmlFor="email" className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-1.5 ml-1">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Mail size={16} className="text-outline" />
+                      </div>
+                      <input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        required
+                        className="block w-full pl-10 pr-4 py-3 bg-surface-container-low border border-outline-variant/20 rounded-xl text-on-surface outline-none transition-all text-sm focus:ring-2 focus:ring-primary/20"
+                      />
                     </div>
-                    <input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      required
-                      className="block w-full pl-10 pr-4 py-3 bg-surface-container-low border border-outline-variant/20 rounded-xl text-on-surface outline-none transition-all text-sm focus:ring-2 focus:ring-primary/20"
-                    />
                   </div>
+
+                  {authMethod === 'password' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="space-y-4"
+                    >
+                      <div>
+                        <label htmlFor="password" className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-1.5 ml-1">
+                          Password
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                            <Key size={16} className="text-outline" />
+                          </div>
+                          <input
+                            id="password"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            required
+                            className="block w-full pl-10 pr-4 py-3 bg-surface-container-low border border-outline-variant/20 rounded-xl text-on-surface outline-none transition-all text-sm focus:ring-2 focus:ring-primary/20"
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
-                {error && <div className="mb-4 text-red-500 text-xs">{error}</div>}
+
+                {error && (
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }}
+                    className="mb-4 text-red-500 text-[10px] font-bold uppercase bg-red-500/5 px-3 py-2 rounded-lg border border-red-500/10"
+                  >
+                    {error}
+                  </motion.div>
+                )}
+
                 <button
                   type="submit"
                   disabled={sending}
-                  className="w-full bg-primary text-on-primary font-semibold py-3 rounded-xl hover:bg-primary-container transition-all flex items-center justify-center gap-2"
+                  className="w-full bg-primary text-on-primary font-bold py-3.5 rounded-xl hover:bg-primary-container transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/10"
                 >
-                  {sending ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-                  Send Magic Link
+                  {sending ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : authMethod === 'magic' ? (
+                    <><Sparkles size={18} /> Send Magic Link</>
+                  ) : authMode === 'signup' ? (
+                    <><UserPlus size={18} /> Create Account</>
+                  ) : (
+                    <><LogIn size={18} /> Sign In</>
+                  )}
                 </button>
+
+                {authMethod === 'password' && (
+                  <div className="mt-4 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode(authMode === 'signup' ? 'login' : 'signup')}
+                      className="text-[11px] font-bold text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+                    >
+                      {authMode === 'signup' ? 'ALREADY HAVE AN ACCOUNT? SIGN IN' : 'NEED AN ACCOUNT? SIGN UP'}
+                    </button>
+                  </div>
+                )}
               </form>
             </motion.div>
           )}

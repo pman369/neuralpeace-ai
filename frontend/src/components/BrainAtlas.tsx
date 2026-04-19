@@ -1,7 +1,8 @@
 import { useRef, useState, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Float, Text, ContactShadows } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Float, ContactShadows, useGLTF, Environment } from '@react-three/drei';
 import * as THREE from 'three';
+import { Suspense } from 'react';
 
 // Define brain regions for highlighting
 export type BrainRegion = 'Frontal' | 'Parietal' | 'Temporal' | 'Occipital' | 'Cerebellum' | null;
@@ -20,14 +21,13 @@ function BrainPart({ position, scale, color, name, activeRegion, onHover }: Regi
   const [hovered, setHover] = useState(false);
   const isActive = activeRegion === name;
 
-  // Animation: subtle scale pulse if active or hovered
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
-    const targetScale = (isActive || hovered) ? 1.1 : 1.0;
+    const targetScale = (isActive || hovered) ? 1.05 : 1.0;
     mesh.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
     
     if (isActive) {
-      mesh.current.position.y += Math.sin(t * 2) * 0.001;
+      mesh.current.position.y += Math.sin(t * 3) * 0.0005;
     }
   });
 
@@ -45,18 +45,27 @@ function BrainPart({ position, scale, color, name, activeRegion, onHover }: Regi
         onHover(null);
       }}
     >
-      <sphereGeometry args={[1, 32, 32]} />
-      <meshStandardMaterial
-        color={isActive ? '#00e5ff' : hovered ? '#4fc3f7' : color}
-        roughness={0.3}
-        metalness={0.2}
-        emissive={isActive ? '#00e5ff' : '#000'}
-        emissiveIntensity={isActive ? 0.5 : 0}
-        transparent
-        opacity={0.9}
+      <sphereGeometry args={[1, 64, 64]} />
+      <meshPhysicalMaterial
+        color={isActive ? '#00fbff' : hovered ? '#b3f0ff' : color}
+        emissive={isActive ? '#00fbff' : hovered ? '#00fbff' : '#000'}
+        emissiveIntensity={isActive ? 2.5 : hovered ? 0.8 : 0}
+        roughness={0.1}
+        metalness={0.8}
+        transmission={0.4}
+        thickness={0.5}
+        ior={1.5}
+        attenuationColor="#ffffff"
+        attenuationDistance={1}
       />
     </mesh>
   );
+}
+
+// Placeholder for future GLTF integration
+function Model({ highlightRegion }: { highlightRegion: BrainRegion }) {
+  // const { nodes, materials } = useGLTF('/models/brain.glb');
+  return null;
 }
 
 interface BrainAtlasProps {
@@ -91,28 +100,36 @@ export default function BrainAtlas({ highlightRegion }: BrainAtlasProps) {
       </div>
 
       <Canvas shadows dpr={[1, 2]}>
-        <PerspectiveCamera makeDefault position={[0, 2, 5]} fov={40} />
-        <ambientLight intensity={0.5} />
-        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
-        <pointLight position={[-10, -10, -10]} intensity={0.5} />
+        <PerspectiveCamera makeDefault position={[0, 2, 6]} fov={35} />
+        <ambientLight intensity={0.2} />
+        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={2} castShadow color="#fff" />
+        <pointLight position={[-10, -10, -10]} intensity={1} color="#4fc3f7" />
+        <Environment preset="night" />
         
-        <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
-          <group position={[0, 0.3, 0]}>
-            {parts.map((part, i) => (
-              <group key={i} scale={part.scale as any}>
-                <BrainPart
-                  name={part.name}
-                  position={part.pos}
-                  color={part.color}
-                  activeRegion={activeRegion}
-                  onHover={setHoveredRegion}
-                />
+        <Suspense fallback={null}>
+          <Float speed={2} rotationIntensity={0.6} floatIntensity={0.6}>
+            <group position={[0, 0, 0]}>
+              <Model highlightRegion={activeRegion} />
+              
+              {/* Fallback geometric model */}
+              <group scale={1.2}>
+                {parts.map((part, i) => (
+                  <group key={i} scale={part.scale as any}>
+                    <BrainPart
+                      name={part.name}
+                      position={part.pos}
+                      color={part.color}
+                      activeRegion={activeRegion}
+                      onHover={setHoveredRegion}
+                    />
+                  </group>
+                ))}
               </group>
-            ))}
-          </group>
-        </Float>
+            </group>
+          </Float>
+        </Suspense>
 
-        <ContactShadows position={[0, -1.5, 0]} opacity={0.4} scale={10} blur={2} far={4.5} />
+        <ContactShadows position={[0, -2, 0]} opacity={0.6} scale={12} blur={2.5} far={5} color="#000000" />
         <OrbitControls 
           enablePan={false} 
           minDistance={3} 
