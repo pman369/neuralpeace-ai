@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Save, Loader2, User, Mail, BookOpen, LogOut, Trash2, ShieldLock, Key } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, User, Mail, BookOpen, LogOut, Trash2, Shield, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { updateProfile, updateExpertiseLevel, resetPassword } from '../lib/auth';
@@ -196,7 +196,7 @@ export default function SettingsPage() {
           {/* Account & Security Section */}
           <section className="bg-surface-container-lowest rounded-2xl border border-outline-variant/15 p-6 mb-6">
             <h2 className="text-lg font-bold text-on-surface font-headline mb-4 flex items-center gap-2">
-              <ShieldLock size={18} className="text-primary" />
+              <Shield size={18} className="text-primary" />
               Security
             </h2>
 
