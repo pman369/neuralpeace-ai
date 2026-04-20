@@ -4,7 +4,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.42.0';
 import { getHash, checkCache, updateCache } from './cache.ts';
 import { performHybridRAG } from './rag.ts';
-import { judgeMedicalAdvice } from './guardrails.ts';
+import { judgeUserIntent } from './guardrails.ts';
+import { getPersonaPrompt } from './prompts.ts';
 import { detectExpertiseLevel } from './lens.ts';
 import { ExpertiseLevel } from './types.ts';
 
@@ -22,20 +23,7 @@ interface ChatRequest {
   stream?: boolean;
 }
 
-function buildSystemPrompt(expertiseLevel: string, isMedical: boolean, context?: string): string {
-  const basePrompt = `You are NeuralPeace AI, an expert-level neuroscience assistant. Use valid peer-reviewed research and the context below.`;
-  const contextPrompt = context ? `\n\n**Context:**\n${context}` : '';
-  const expertisePrompts: Record<string, string> = {
-    Novice: `Use simple analogies, avoid jargon.`,
-    Practitioner: `Focus on mechanisms and recent findings.`,
-    Expert: `Detailed technical analysis, cite DOIs.`,
-    Scholar: `Cross-disciplinary historical context and paradigm shifts.`,
-  };
-  const ethicalDisclaimer = `\n\n**Educational Tool ONLY. Not Medical Advice.**`;
-  const medicalWarning = isMedical ? `\n\n**USER ASKED MEDICAL QUESTION.** Start with disclaimer. Recommend a doctor.` : '';
-
-  return basePrompt + contextPrompt + (expertisePrompts[expertiseLevel] ?? expertisePrompts['Practitioner']) + medicalWarning + ethicalDisclaimer;
-}
+// Removed buildSystemPrompt in favor of modular prompts.ts
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -75,10 +63,10 @@ serve(async (req) => {
       return new Response(JSON.stringify({ ...cachedResponse, cached: true }), { headers: { 'Content-Type': 'application/json' } });
     }
 
-    // 2. Parallel RAG, Safety Check, and Optional Expertise Detection
+    // 2. Parallel RAG, Safety Check (Intent/Safety), and Optional Expertise Detection
     const tasks: Promise<any>[] = [
       performHybridRAG(supabase, message),
-      judgeMedicalAdvice(message, PERPLEXITY_API_KEY!, PERPLEXITY_MODEL)
+      judgeUserIntent(message, PERPLEXITY_API_KEY!, PERPLEXITY_MODEL)
     ];
 
     if (expertiseLevel === 'Auto') {
@@ -91,7 +79,25 @@ serve(async (req) => {
       ? detectedLens.level 
       : expertiseLevel;
 
-    const systemPrompt = buildSystemPrompt(activeExpertise || 'Expert', safety.isMedical, context);
+    const personaPrompt = getPersonaPrompt(activeExpertise || 'Expert', safety.intent);
+    
+    // Add context and mood mirror to the persona prompt
+    const moodInstruction = safety.sentiment === 'frustrated' 
+      ? "User seems frustrated. Be extra encouraging, use simpler terms, and offer a supportive analogy." 
+      : safety.sentiment === 'skeptical' 
+        ? "User is skeptical. Focus heavily on evidence, experimental data, and technical rigor." 
+        : "";
+
+    const systemPrompt = `${personaPrompt}
+      
+${moodInstruction}
+
+Context from Knowledge Base:
+${context}
+      
+Answer based on the context provided. If unsure, state it. Cite sources using [1], [2], etc.
+Educational Tool ONLY. Not Medical Advice.`;
+
     const messages = [
       { role: 'system', content: systemPrompt },
       ...(conversationHistory || []),

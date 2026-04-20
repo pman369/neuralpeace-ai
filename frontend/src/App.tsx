@@ -16,6 +16,8 @@ const ModuleDetail = lazy(() => import('./pages/ModuleDetail'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const DebateLobby = lazy(() => import('./pages/DebateLobby'));
+const DebateRoom = lazy(() => import('./pages/DebateRoom'));
 
 /**
  * Route guard: redirects to /auth if user is not authenticated.
@@ -88,6 +90,26 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Protected: Debate Arena */}
+        <Route
+          path="/debate"
+          element={
+            <ProtectedRoute>
+              <TopNav />
+              <DebateLobby />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/debate/:id"
+          element={
+            <ProtectedRoute>
+              <TopNav />
+              <DebateRoom />
             </ProtectedRoute>
           }
         />

@@ -43,21 +43,28 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const hasLoadedRef = useRef(false);
 
-  // Simple keyword detection to highlight brain regions
+  // Intelligent Atlas Triggers & Region Highlighting
   useEffect(() => {
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === 'assistant') {
         const content = lastMessage.content.toLowerCase();
-        if (content.includes('frontal') || content.includes('executive') || content.includes('prefrontal')) {
+        
+        // Auto-open atlas for "Artistic" or highly anatomical responses
+        if (content.includes('🎨') || content.includes('visualize') || content.includes('metaphor')) {
+          setAtlasOpen(true);
+        }
+
+        // Expanded keyword detection for regions
+        if (content.match(/frontal|prefrontal|executive|decision|personality|motor cortex/)) {
           setHighlightRegion('Frontal');
-        } else if (content.includes('parietal') || content.includes('sensory') || content.includes('spatial')) {
+        } else if (content.match(/parietal|sensory|spatial|integration|proprioception/)) {
           setHighlightRegion('Parietal');
-        } else if (content.includes('temporal') || content.includes('auditory') || content.includes('language')) {
+        } else if (content.match(/temporal|auditory|language|memory|hippocampus|wernicke/)) {
           setHighlightRegion('Temporal');
-        } else if (content.includes('occipital') || content.includes('visual') || content.includes('vision')) {
+        } else if (content.match(/occipital|visual|vision|striate/)) {
           setHighlightRegion('Occipital');
-        } else if (content.includes('cerebellum') || content.includes('motor') || content.includes('coordination')) {
+        } else if (content.match(/cerebellum|coordination|balance|motor learning/)) {
           setHighlightRegion('Cerebellum');
         } else {
           setHighlightRegion(null);

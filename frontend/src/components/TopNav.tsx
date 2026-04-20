@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Brain, Palette, Menu, X, Library, MessageSquare } from 'lucide-react';
+import { Settings, Brain, Palette, Menu, X, Library, MessageSquare, MessagesSquare } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import UserMenu from './UserMenu';
@@ -14,6 +14,7 @@ export default function TopNav() {
   const navLinks = [
     { to: '/', label: 'Knowledge Base', icon: <Library size={18} /> },
     { to: '/chat', label: 'Chat', icon: <MessageSquare size={18} /> },
+    { to: '/debate', label: 'Mind Meld', icon: <MessagesSquare size={18} /> },
   ];
 
   return (
