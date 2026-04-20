@@ -1,4 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Brain, Mail, Loader2, ArrowLeft, Sparkles, ChevronRight, CheckCircle2, Lock, Key, UserPlus, LogIn } from 'lucide-react';
 import { sendMagicLink, signUpWithPassword, signInWithPassword } from '../lib/auth';
@@ -19,6 +20,7 @@ interface Question {
 type Step = 'welcome' | 'quiz' | 'result' | 'email' | 'sent';
 
 export default function OnboardingPage({ onBack }: OnboardingPageProps) {
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>('welcome');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -89,6 +91,10 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
         result = await signUpWithPassword(email.trim(), password, finalLevel);
       } else {
         result = await signInWithPassword(email.trim(), password);
+      }
+      
+      if (!result.error) {
+        navigate('/');
       }
     }
 

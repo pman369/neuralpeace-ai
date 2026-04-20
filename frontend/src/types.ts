@@ -1,6 +1,6 @@
 export type Category = 'Neuroanatomy' | 'Methods' | 'Computational' | 'Psychology' | 'Therapeutics' | 'All Modules';
 
-export type ExpertiseLevel = 'Novice' | 'Practitioner' | 'Expert' | 'Scholar';
+export type ExpertiseLevel = 'Novice' | 'Practitioner' | 'Expert' | 'Scholar' | 'Auto';
 
 export interface Module {
   id: string;

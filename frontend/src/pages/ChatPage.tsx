@@ -10,7 +10,7 @@ import ChatHistory from '../components/ChatHistory';
 const BrainAtlas = lazy(() => import('../components/BrainAtlas'));
 const CitationPanel = lazy(() => import('../components/CitationPanel'));
 
-import { BrainRegion } from '../components/BrainAtlas';
+import type { BrainRegion } from '../components/BrainAtlas';
 import { EXPERTISE_LEVELS } from '../constants';
 import { ExpertiseLevel } from '../types';
 import {
@@ -41,6 +41,7 @@ export default function ChatPage() {
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
   const [highlightRegion, setHighlightRegion] = useState<BrainRegion>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const hasLoadedRef = useRef(false);
 
   // Simple keyword detection to highlight brain regions
   useEffect(() => {
@@ -91,19 +92,27 @@ export default function ChatPage() {
       console.error('Error initializing session:', err);
     } finally {
       setLoading(false);
+      hasLoadedRef.current = true;
     }
   }, [profile?.expertise_level, user?.id]);
 
   // Load sessions on mount
   useEffect(() => {
+    if (hasLoadedRef.current) return;
+
     async function load() {
-      const sessions = await fetchChatSessions();
-      if (sessions.length > 0) {
-        // Load most recent session
-        const latest = sessions[0];
-        await initNewSession(latest.id, latest.expertise_level);
-      } else {
-        await initNewSession();
+      try {
+        const sessions = await fetchChatSessions();
+        if (sessions.length > 0) {
+          // Load most recent session
+          const latest = sessions[0];
+          await initNewSession(latest.id, latest.expertise_level);
+        } else {
+          await initNewSession();
+        }
+      } catch (err) {
+        console.error('Critical error loading sessions:', err);
+        setLoading(false);
       }
     }
     load();

@@ -67,6 +67,7 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const EXPERTISE_LEVELS: { level: ExpertiseLevel; icon: string; description: string }[] = [
+  { level: 'Auto', icon: 'magic_button', description: 'Auto-detect depth' },
   { level: 'Novice', icon: 'child_care', description: 'Adjust AI depth' },
   { level: 'Practitioner', icon: 'psychology', description: 'Adjust AI depth' },
   { level: 'Expert', icon: 'biotech', description: 'Adjust AI depth' },

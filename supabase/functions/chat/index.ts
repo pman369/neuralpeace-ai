@@ -5,6 +5,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.42.0';
 import { getHash, checkCache, updateCache } from './cache.ts';
 import { performHybridRAG } from './rag.ts';
 import { judgeMedicalAdvice } from './guardrails.ts';
+import { detectExpertiseLevel } from './lens.ts';
+import { ExpertiseLevel } from './types.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -15,7 +17,7 @@ const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
 interface ChatRequest {
   message: string;
-  expertiseLevel: string;
+  expertiseLevel: ExpertiseLevel;
   conversationHistory: { role: string; content: string }[];
   stream?: boolean;
 }
@@ -73,13 +75,23 @@ serve(async (req) => {
       return new Response(JSON.stringify({ ...cachedResponse, cached: true }), { headers: { 'Content-Type': 'application/json' } });
     }
 
-    // 2. Parallel RAG and Safety Check
-    const [context, safety] = await Promise.all([
+    // 2. Parallel RAG, Safety Check, and Optional Expertise Detection
+    const tasks: Promise<any>[] = [
       performHybridRAG(supabase, message),
       judgeMedicalAdvice(message, PERPLEXITY_API_KEY!, PERPLEXITY_MODEL)
-    ]);
+    ];
 
-    const systemPrompt = buildSystemPrompt(expertiseLevel || 'Expert', safety.isMedical, context);
+    if (expertiseLevel === 'Auto') {
+      tasks.push(detectExpertiseLevel(message, PERPLEXITY_API_KEY!, PERPLEXITY_MODEL));
+    }
+
+    const [context, safety, detectedLens] = await Promise.all(tasks);
+    
+    const activeExpertise = (expertiseLevel === 'Auto' && detectedLens) 
+      ? detectedLens.level 
+      : expertiseLevel;
+
+    const systemPrompt = buildSystemPrompt(activeExpertise || 'Expert', safety.isMedical, context);
     const messages = [
       { role: 'system', content: systemPrompt },
       ...(conversationHistory || []),
@@ -98,7 +110,7 @@ serve(async (req) => {
     if (!stream) {
       const data = await perplexityResponse.json();
       const responsePayload = { content: data.choices?.[0]?.message?.content ?? '', citations: data.citations ?? [] };
-      await updateCache(supabase, cacheKey, expertiseLevel, responsePayload);
+      await updateCache(supabase, cacheKey, activeExpertise, responsePayload);
       return new Response(JSON.stringify({ ...responsePayload, isMedical: safety.isMedical }), { headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -133,7 +145,7 @@ serve(async (req) => {
           }
         }
         await writer.write(encoder.encode('data: [DONE]\n\n'));
-        if (fullContent) await updateCache(supabase, cacheKey, expertiseLevel, { content: fullContent, citations });
+        if (fullContent) await updateCache(supabase, cacheKey, activeExpertise, { content: fullContent, citations });
       } finally {
         writer.close();
       }
