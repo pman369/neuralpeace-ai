@@ -25,22 +25,21 @@ interface ChatRequest {
 
 // Removed buildSystemPrompt in favor of modular prompts.ts
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-    });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const body: ChatRequest = await req.json();
     const { message, expertiseLevel, conversationHistory, stream = true } = body;
 
-    if (!message) return new Response(JSON.stringify({ error: 'Message required' }), { status: 400 });
+    if (!message) return new Response(JSON.stringify({ error: 'Message required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
     // 1. Caching
     const cacheKey = await getHash(`${expertiseLevel}:${message}`);
@@ -58,9 +57,9 @@ serve(async (req) => {
             controller.close();
           },
         });
-        return new Response(readable, { headers: { 'Content-Type': 'text/event-stream' } });
+        return new Response(readable, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' } });
       }
-      return new Response(JSON.stringify({ ...cachedResponse, cached: true }), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ ...cachedResponse, cached: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // 2. Parallel RAG, Safety Check (Intent/Safety), and Optional Expertise Detection
@@ -117,7 +116,7 @@ Educational Tool ONLY. Not Medical Advice.`;
       const data = await geminiResponse.json();
       const responsePayload = { content: data.choices?.[0]?.message?.content ?? '', citations: data.citations ?? [] };
       await updateCache(supabase, cacheKey, activeExpertise, responsePayload);
-      return new Response(JSON.stringify({ ...responsePayload, isMedical: safety.isMedical }), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ ...responsePayload, isMedical: safety.isMedical }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // 4. Streaming
@@ -157,9 +156,9 @@ Educational Tool ONLY. Not Medical Advice.`;
       }
     })();
 
-    return new Response(readable, { headers: { 'Content-Type': 'text/event-stream' } });
+    return new Response(readable, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' } });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
