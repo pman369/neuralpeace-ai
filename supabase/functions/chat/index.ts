@@ -11,8 +11,8 @@ import { ExpertiseLevel } from './types.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
-const PERPLEXITY_MODEL = Deno.env.get('PERPLEXITY_MODEL') || 'sonar';
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+const GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') || 'gemini-1.5-flash';
 
 const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -66,11 +66,11 @@ serve(async (req) => {
     // 2. Parallel RAG, Safety Check (Intent/Safety), and Optional Expertise Detection
     const tasks: Promise<any>[] = [
       performHybridRAG(supabase, message),
-      judgeUserIntent(message, PERPLEXITY_API_KEY!, PERPLEXITY_MODEL)
+      judgeUserIntent(message, GEMINI_API_KEY!, GEMINI_MODEL)
     ];
 
     if (expertiseLevel === 'Auto') {
-      tasks.push(detectExpertiseLevel(message, PERPLEXITY_API_KEY!, PERPLEXITY_MODEL));
+      tasks.push(detectExpertiseLevel(message, GEMINI_API_KEY!, GEMINI_MODEL));
     }
 
     const [context, safety, detectedLens] = await Promise.all(tasks);
@@ -104,17 +104,17 @@ Educational Tool ONLY. Not Medical Advice.`;
       { role: 'user', content: message },
     ];
 
-    // 3. Perplexity Call
-    const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+    // 3. Gemini Call
+    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${PERPLEXITY_API_KEY}` },
-      body: JSON.stringify({ model: PERPLEXITY_MODEL, messages, temperature: 0.3, max_tokens: 2000, stream }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GEMINI_API_KEY}` },
+      body: JSON.stringify({ model: GEMINI_MODEL, messages, temperature: 0.3, max_tokens: 2000, stream }),
     });
 
-    if (!perplexityResponse.ok) throw new Error(`API Error: ${perplexityResponse.status}`);
+    if (!geminiResponse.ok) throw new Error(`API Error: ${geminiResponse.status}`);
 
     if (!stream) {
-      const data = await perplexityResponse.json();
+      const data = await geminiResponse.json();
       const responsePayload = { content: data.choices?.[0]?.message?.content ?? '', citations: data.citations ?? [] };
       await updateCache(supabase, cacheKey, activeExpertise, responsePayload);
       return new Response(JSON.stringify({ ...responsePayload, isMedical: safety.isMedical }), { headers: { 'Content-Type': 'application/json' } });
@@ -125,7 +125,7 @@ Educational Tool ONLY. Not Medical Advice.`;
     const decoder = new TextDecoder();
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
-    const reader = perplexityResponse.body?.getReader();
+    const reader = geminiResponse.body?.getReader();
 
     (async () => {
       let fullContent = '';

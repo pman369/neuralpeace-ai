@@ -2,29 +2,24 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import type { DebateTopic, Debate } from '../lib/database.types.supplement';
 import { MessagesSquare, Trophy, Users, Loader2, ArrowRight } from 'lucide-react';
 
-interface Topic {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  difficulty: string;
-}
 
 export default function DebateLobby() {
   const navigate = useNavigate();
-  const [topics, setTopics] = useState<Topic[]>([]);
+  const [topics, setTopics] = useState<DebateTopic[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadTopics() {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('debate_topics')
         .select('*')
         .eq('is_active', true);
       
-      if (!error && data) setTopics(data);
+      if (!error && data) setTopics(data as DebateTopic[]);
       setLoading(false);
     }
     loadTopics();
@@ -32,7 +27,8 @@ export default function DebateLobby() {
 
   const handleJoinDebate = async (topicId: string) => {
     // For now, we find an existing 'waiting' or 'active' debate or create one
-    const { data: existing } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existing } = await (supabase as any)
       .from('debates')
       .select('id')
       .eq('topic_id', topicId)
@@ -41,15 +37,16 @@ export default function DebateLobby() {
       .single();
 
     if (existing) {
-      navigate(`/debate/${existing.id}`);
+      navigate(`/debate/${(existing as Debate).id}`);
     } else {
-      const { data: created } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: created } = await (supabase as any)
         .from('debates')
         .insert({ topic_id: topicId, status: 'waiting' })
         .select()
         .single();
       
-      if (created) navigate(`/debate/${created.id}`);
+      if (created) navigate(`/debate/${(created as Debate).id}`);
     }
   };
 

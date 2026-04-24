@@ -35,8 +35,12 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
 
   useEffect(() => {
     async function fetchQuestions() {
-      const { data } = await supabase.from('onboarding_questions').select('*');
-      if (data) setQuestions(data);
+      try {
+        const { data } = await supabase.from('onboarding_questions').select('*');
+        if (data) setQuestions(data as unknown as Question[]);
+      } catch (e) {
+        console.error('Failed to fetch questions:', e);
+      }
     }
     fetchQuestions();
   }, []);

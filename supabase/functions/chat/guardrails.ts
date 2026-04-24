@@ -16,10 +16,10 @@ export function detectMedicalKeywords(message: string): boolean {
 export async function judgeUserIntent(
   message: string, 
   apiKey: string, 
-  model: string = 'sonar'
+  model: string = 'gemini-1.5-flash'
 ): Promise<{ isMedical: boolean; intent: string; sentiment: string; reasoning: string }> {
   try {
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

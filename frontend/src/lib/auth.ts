@@ -90,14 +90,18 @@ export async function updateProfile(
  * Fetch the current user's profile.
  */
 export async function fetchProfile(userId: string) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, display_name, email, expertise_level, avatar_url, created_at')
-    .eq('id', userId)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, display_name, email, expertise_level, avatar_url, created_at')
+      .eq('id', userId)
+      .single();
 
-  if (error) return { profile: null, error: error.message };
-  return { profile: data, error: null };
+    if (error) return { profile: null, error: error.message };
+    return { profile: data, error: null };
+  } catch (err) {
+    return { profile: null, error: err instanceof Error ? err.message : 'Failed to fetch' };
+  }
 }
 
 /**

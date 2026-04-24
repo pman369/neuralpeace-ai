@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
+import type { DebateArgument } from '../lib/database.types.supplement';
 import { 
   Send, 
   ArrowLeft, 
@@ -12,21 +13,13 @@ import {
   BrainCircuit
 } from 'lucide-react';
 
-interface Argument {
-  id: string;
-  user_id: string;
-  content: string;
-  fact_check_score: number | null;
-  fallacies: string[] | null;
-  created_at: string;
-}
 
 export default function DebateRoom() {
   const { id: debateId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  const [messages, setMessages] = useState<Argument[]>([]);
+  const [messages, setMessages] = useState<DebateArgument[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -37,14 +30,18 @@ export default function DebateRoom() {
 
     // 1. Initial Load
     async function loadData() {
-      const { data, error } = await supabase
-        .from('debate_arguments')
-        .select('*')
-        .eq('debate_id', debateId)
-        .order('created_at', { ascending: true });
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase as any)
+          .from('debate_arguments')
+          .select('*')
+          .eq('debate_id', debateId)
+          .order('created_at', { ascending: true });
 
-      if (!error && data) setMessages(data);
-      setLoading(false);
+        if (!error && data) setMessages(data as DebateArgument[]);
+      } finally {
+        setLoading(false);
+      }
     }
     loadData();
 
@@ -60,7 +57,7 @@ export default function DebateRoom() {
           filter: `debate_id=eq.${debateId}`
         },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as Argument]);
+          setMessages((prev) => [...prev, payload.new as DebateArgument]);
         }
       )
       .subscribe();
@@ -79,7 +76,8 @@ export default function DebateRoom() {
     if (!inputValue.trim() || !user || !debateId || sending) return;
 
     setSending(true);
-    const { error } = await supabase.from('debate_arguments').insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from('debate_arguments').insert({
       debate_id: debateId,
       user_id: user.id,
       content: inputValue.trim()

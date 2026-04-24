@@ -1,22 +1,24 @@
 import { useRef, useState, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Float, ContactShadows, useGLTF, Environment } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Float, ContactShadows, useGLTF, Environment, Preload, BakeShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { Suspense } from 'react';
+
+// Shared geometry to avoid multiple instantiations
+const sharedGeometry = new THREE.SphereGeometry(1, 64, 64);
 
 // Define brain regions for highlighting
 export type BrainRegion = 'Frontal' | 'Parietal' | 'Temporal' | 'Occipital' | 'Cerebellum' | null;
 
 interface RegionProps {
   position: [number, number, number];
-  scale: [number, number, number];
   color: string;
   name: BrainRegion;
   activeRegion: BrainRegion;
   onHover: (name: BrainRegion) => void;
 }
 
-function BrainPart({ position, scale, color, name, activeRegion, onHover }: RegionProps) {
+function BrainPart({ position, color, name, activeRegion, onHover }: RegionProps) {
   const mesh = useRef<THREE.Mesh>(null!);
   const [hovered, setHover] = useState(false);
   const isActive = activeRegion === name;
@@ -44,8 +46,8 @@ function BrainPart({ position, scale, color, name, activeRegion, onHover }: Regi
         setHover(false);
         onHover(null);
       }}
+      geometry={sharedGeometry}
     >
-      <sphereGeometry args={[1, 64, 64]} />
       <meshPhysicalMaterial
         color={isActive ? '#00fbff' : hovered ? '#b3f0ff' : color}
         emissive={isActive ? '#00fbff' : hovered ? '#00fbff' : '#000'}
@@ -62,9 +64,9 @@ function BrainPart({ position, scale, color, name, activeRegion, onHover }: Regi
   );
 }
 
-// Placeholder for future GLTF integration
+// Placeholder for future GLTF integration with Draco compression
 function Model({ highlightRegion }: { highlightRegion: BrainRegion }) {
-  // const { nodes, materials } = useGLTF('/models/brain.glb');
+  // const { nodes, materials } = useGLTF('/models/brain.glb', 'https://www.gstatic.com/draco/versioned/decoders/1.5.5/');
   return null;
 }
 
@@ -137,6 +139,8 @@ export default function BrainAtlas({ highlightRegion }: BrainAtlasProps) {
           autoRotate={!activeRegion}
           autoRotateSpeed={0.5}
         />
+        <Preload all />
+        {/* <BakeShadows /> uncomment if shadows are completely static */}
       </Canvas>
 
       <div className="absolute bottom-6 right-6 z-10 text-[10px] text-outline font-medium uppercase tracking-tighter opacity-50">

@@ -50,14 +50,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) {
-        fetchProfile(s.user.id).then(({ profile: p }) => setProfile(p));
-      }
-      setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(async ({ data: { session: s } }) => {
+        setSession(s);
+        setUser(s?.user ?? null);
+        if (s?.user) {
+          try {
+            const { profile: p } = await fetchProfile(s.user.id);
+            setProfile(p);
+          } catch (e) {
+            setProfile(null);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Auth initialization error:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     // Listen for auth changes
     const {
@@ -66,7 +77,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        await fetchProfile(s.user.id).then(({ profile: p }) => setProfile(p));
+        try {
+          const { profile: p } = await fetchProfile(s.user.id);
+          setProfile(p);
+        } catch (e) {
+          setProfile(null);
+        }
       } else {
         setProfile(null);
       }
