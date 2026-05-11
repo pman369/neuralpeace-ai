@@ -77,7 +77,7 @@ export async function signOut(): Promise<{ error: string | null }> {
  */
 export async function updateProfile(
   userId: string,
-  updates: { display_name?: string; expertise_level?: string; avatar_url?: string }
+  updates: { display_name?: string; expertise_level?: string; avatar_url?: string; active_session_id?: string | null }
 ): Promise<{ error: string | null }> {
   const { error } = await supabase
     .from('profiles')
@@ -93,7 +93,7 @@ export async function fetchProfile(userId: string) {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, display_name, email, expertise_level, avatar_url, created_at')
+      .select('id, display_name, email, expertise_level, avatar_url, created_at, active_session_id')
       .eq('id', userId)
       .single();
 
@@ -112,4 +112,14 @@ export async function updateExpertiseLevel(
   level: string
 ): Promise<{ error: string | null }> {
   return updateProfile(userId, { expertise_level: level });
+}
+
+/**
+ * Update the user's active session ID in their profile.
+ */
+export async function updateActiveSession(
+  userId: string,
+  sessionId: string | null
+): Promise<{ error: string | null }> {
+  return updateProfile(userId, { active_session_id: sessionId });
 }

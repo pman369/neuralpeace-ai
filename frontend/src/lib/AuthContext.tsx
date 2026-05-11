@@ -9,6 +9,7 @@ export interface UserProfile {
   email: string;
   expertise_level: string | null;
   avatar_url: string | null;
+  active_session_id: string | null;
   created_at: string;
 }
 

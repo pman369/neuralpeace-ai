@@ -8,13 +8,16 @@ import { judgeUserIntent } from './guardrails.ts';
 import { getPersonaPrompt } from './prompts.ts';
 import { detectExpertiseLevel } from './lens.ts';
 import { ExpertiseLevel } from './types.ts';
+import { corsHeaders } from '../_shared/cors.ts';
+import { Logger } from '../_shared/logger.ts';
+
+const logger = new Logger();
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') || 'gemini-1.5-flash';
-
-const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
 interface ChatRequest {
   message: string;
@@ -23,20 +26,31 @@ interface ChatRequest {
   stream?: boolean;
 }
 
-// Removed buildSystemPrompt in favor of modular prompts.ts
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Missing Authorization header' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Client for user authentication and RLS
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Verify user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Admin client for global cache (if needed to bypass cache RLS)
+    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
     const body: ChatRequest = await req.json();
     const { message, expertiseLevel, conversationHistory, stream = true } = body;
 
@@ -44,9 +58,9 @@ serve(async (req) => {
 
     // 1. Caching
     const cacheKey = await getHash(`${expertiseLevel}:${message}`);
-    const cachedResponse = await checkCache(supabase, cacheKey, expertiseLevel);
+    const cachedResponse = await checkCache(supabaseAdmin, cacheKey, expertiseLevel);
     if (cachedResponse) {
-      console.log('Cache hit:', cacheKey);
+      logger.info('Cache hit', { cacheKey, expertiseLevel });
       if (stream) {
         const encoder = new TextEncoder();
         const readable = new ReadableStream({
@@ -116,7 +130,7 @@ Educational Tool ONLY. Not Medical Advice.`;
     if (!stream) {
       const data = await geminiResponse.json();
       const responsePayload = { content: data.choices?.[0]?.message?.content ?? '', citations: data.citations ?? [] };
-      await updateCache(supabase, cacheKey, activeExpertise, responsePayload);
+      await updateCache(supabaseAdmin, cacheKey, activeExpertise, responsePayload);
       return new Response(JSON.stringify({ ...responsePayload, isMedical: safety.isMedical }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -151,7 +165,7 @@ Educational Tool ONLY. Not Medical Advice.`;
           }
         }
         await writer.write(encoder.encode('data: [DONE]\n\n'));
-        if (fullContent) await updateCache(supabase, cacheKey, activeExpertise, { content: fullContent, citations });
+        if (fullContent) await updateCache(supabaseAdmin, cacheKey, activeExpertise, { content: fullContent, citations });
       } finally {
         writer.close();
       }
@@ -160,6 +174,7 @@ Educational Tool ONLY. Not Medical Advice.`;
     return new Response(readable, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' } });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    logger.error('Chat function error', { error: error.message });
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
