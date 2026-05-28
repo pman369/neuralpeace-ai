@@ -5,7 +5,7 @@ env.allowLocalModels = false;
 env.useBrowserCache = true;
 
 class PipelineSingleton {
-  static task = 'feature-extraction';
+  static task = 'feature-extraction' as const;
   static model = 'Supabase/gte-small';
   static instance: any = null;
 
