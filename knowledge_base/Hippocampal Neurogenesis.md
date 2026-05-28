@@ -3,7 +3,7 @@
 ## Adult Neurogenesis Locations
 - **Subgranular Zone (Dentate Gyrus)**: Primary site of adult neurogenesis
 - **Subventricular Zone**: Neural stem cells migrate to olfactory bulb (rodents)
-- **Wnt/Î²-Catenin Signaling**:
+- **Wnt/β-Catenin Signaling**:
   - Proliferation control
   - Neuronal fate determination
   - Integration into existing circuits
@@ -22,7 +22,7 @@
   - Elimination: Activity-dependent pruning
 
 ## LTP Molecular Cascade
-- **Induction**: NMDA receptor activation â†’ CaÂ²âº influx (10-100 Î¼M locally)
+- **Induction**: NMDA receptor activation → Ca²⁺ influx (10-100 μM locally)
 - **Expression**:
   - Early LTP (1-3 hrs): AMPA receptor phosphorylation (GluA1 subunit)
   - Late LTP (hours-days): Protein synthesis, structural changes

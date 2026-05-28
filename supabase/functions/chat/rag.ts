@@ -1,8 +1,11 @@
-export async function performHybridRAG(supabase: any, message: string) {
+export async function performHybridRAG(supabase: any, message: string, clientEmbedding?: number[]) {
   try {
-    // @ts-ignore
-    const model = new Supabase.ai.Session('gte-small');
-    const queryEmbedding = await model.run(message, { mean_pool: true, normalize: true });
+    let queryEmbedding = clientEmbedding;
+    if (!queryEmbedding) {
+      // @ts-ignore
+      const model = new Supabase.ai.Session('gte-small');
+      queryEmbedding = await model.run(message, { mean_pool: true, normalize: true });
+    }
     
     const [semanticRes, keywordRes] = await Promise.all([
       supabase.rpc('match_module_embeddings', {

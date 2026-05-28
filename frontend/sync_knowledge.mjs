@@ -13,11 +13,20 @@ const MODULE_METADATA = {
     "fMRI Protocol Basics": {"category": "Methods", "expertise": "Novice", "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuARoQzCDMjoEGixktInclp5bk4NuggHUedO8vZS3HPTmZOFzVDGPknGCQWzBWW_up8COPyZrMxr7UsXyX0gwflo--HziTNm-ObloYL6RGIfz04bAJ68vLnCFWzwGU_E5zTS9o73FydYZ1OZQUImMICqt2GBKN3GKWcZRpp1tTOV8WNC3ftXY-svo0sqzQCATJbYa-PnkKuWH_RG7rX1gKynuIbRTZhnCC78lupbAk6nGE5Xm-ligWkRJcR1fyVuX9jrFVpz-BD2Ygs", "read_time": "8 mins read", "description": "A beginner-friendly guide to experimental design and initial data cleaning for functional neuroimaging."},
     "Cognitive Load Theory": {"category": "Psychology", "expertise": "Practitioner", "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuAGw8eSfdM6ig4cdutozUjMmzYNJ27utbPankUvID8mdsSIEzxHDIaXsOl8xsSvj-nFCAS-O5b_sAfOqDeUcVo68XD6fuuxEcq8islQntALhFi-d3HRmNaxxojuYgKyyZqjKLyYQSo-G2Cd-Uv2v2qjjGwRBPKbzRBv7Cn7MaGcUeiusfRuKeiErYw4qrA8zV-21oTuNn8a8FDyYKq_cIZ3ERQs3uYbMOjkusYV8lPNkuKVyvLZ1bzRnuDRSHKGcZE3ZH2tjngTtCU", "read_time": "15 mins read", "description": "Analyzing the relationship between working memory capacity and instructional design efficiency."},
     "Hippocampal Neurogenesis": {"category": "Neuroanatomy", "expertise": "Expert", "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuBlD65-tFVnddScEFV2TrMxN0yR3iPc9KAm14Mh-ZdkHyUy_SQlBcxky4QzSnfPj3lsPYvseuRLsgw9WH5uADRthjYP57km-MUFYBwKr6KgHnI5YV8ZXjXv-ZtZMX1Q6mYHZ5q3R4GhqZewy3SYFFJwiVGcNFCz40Zb3H7KTSiXWS1sZVWmLKYmt7AnFr82PWvdpUxJd8MXgy368clSUn43wtnKJuj3dZUJKbgyzYlunkJkinwRH2TAuNQROZonxDqS0_pdpsIg_V4", "read_time": "40 mins read", "description": "Advanced study on the biological mechanisms of adult neuron formation and memory consolidation."},
-    "Introduction to Neurofeedback": {"category": "Therapeutics", "expertise": "Novice", "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCK7YN18eAeLEdwxTZ-J8Zg1DhStYVpseTRfuLol3HLZrUChzoPbMc7WZ3mvDkHnh0TULgt6ZfOm9Cx7boPftP58TFyXE4zyYoP0q4TyjdFUs2cZMIEYlG_cdU7Sh4g_g2KvoKP9tgZmJnWI7ol2hTHl44iSKWVdOC6Y4-rPf_wwWvyYk9zfdIc1PQcUTpamtsuDf5cJUf3WWrTe8e3X9s1a59IbT9SphdaszUi6tyhzQ9TOTVNTmD5x51sGPDq7-eK1hwMKLsEY5w", "read_time": "10 mins read", "description": "Understanding the basics of EEG-driven therapeutic interventions for anxiety and sleep regulation."}
+    "Introduction to Neurofeedback": {"category": "Therapeutics", "expertise": "Novice", "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCK7YN18eAeLEdwxTZ-J8Zg1DhStYVpseTRfuLol3HLZrUChzoPbMc7WZ3mvDkHnh0TULgt6ZfOm9Cx7boPftP58TFyXE4zyYoP0q4TyjdFUs2cZMIEYlG_cdU7Sh4g_g2KvoKP9tgZmJnWI7ol2hTHl44iSKWVdOC6Y4-rPf_wwWvyYk9zfdIc1PQcUTpamtsuDf5cJUf3WWrTe8e3X9s1a59IbT9SphdaszUi6tyhzQ9TOTVNTmD5x51sGPDq7-eK1hwMKLsEY5w", "read_time": "10 mins read", "description": "Understanding the basics of EEG-driven therapeutic interventions for anxiety and sleep regulation."},
+    // Large knowledge-base files
+    "Core Concepts in Neuroscience: From Synaptic Mechanisms to Neuroethics": {"category": "Neuroanatomy", "expertise": "Expert", "image_url": "https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&q=80&w=800", "read_time": "25 mins read", "description": "A comprehensive survey of neuroanatomy, synaptic plasticity, neuroimaging methods, computational models, and neuroethics for the advanced learner."},
+    "Advanced Frontiers in Neuroscience: From Quantum Biology to Synthetic Neural Networks": {"category": "Neuroanatomy", "expertise": "Scholar", "image_url": "https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80&w=800", "read_time": "30 mins read", "description": "Cutting-edge topics spanning ultra-high-field neuroimaging, single-cell RNA sequencing, organoid intelligence, neuromorphic computing, and quantum brain hypotheses."},
+    "Neuroplasticity: Mechanisms, Modulation, and Modern Interventions": {"category": "Neuroanatomy", "expertise": "Expert", "image_url": "https://images.unsplash.com/photo-1518152006812-edab29b069ac?auto=format&fit=crop&q=80&w=800", "read_time": "35 mins read", "description": "From LTP molecular cascades to psychoplastogens and TMS protocols: a deep dive into how the brain rewires itself and how we can harness that capacity."},
+    // DBS and Optogenetics files
+    "Deep Brain Stimulation: Mechanisms & Network Therapy": {"category": "Therapeutics", "expertise": "Expert", "image_url": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=800", "read_time": "20 mins read", "description": "An exploration of DBS as a multimodal intervention targeting circuit-level pathological oscillations through network-wide modulation."},
+    "Precision Optogenetics & Neural Circuit Mapping": {"category": "Methods", "expertise": "Scholar", "image_url": "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&q=80&w=800", "read_time": "18 mins read", "description": "A masterclass in high-resolution circuit dissection, from intersectional targeting to holographic photostimulation."},
 };
 
 function parseMarkdown(filePath) {
-    const content = fs.readFileSync(filePath, 'utf-8');
+    // Normalise CRLF to LF and strip UTF-8 BOM if present
+    let content = fs.readFileSync(filePath, 'utf-8');
+    content = content.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     
     const h1Match = content.match(/^#\s+(.+)$/m);
     if (!h1Match) return null;
@@ -41,7 +50,15 @@ function parseMarkdown(filePath) {
         imageUrl = meta.image_url;
         readTime = meta.read_time;
     } else {
-        description = introText.length > 200 ? introText.substring(0, 200) + "..." : introText;
+        // Strip markdown tokens from intro text before using as the card description
+        let cleanIntro = introText
+            .replace(/^#{1,6}\s+/gm, '')        // headings
+            .replace(/[*_]{1,3}(.*?)[*_]{1,3}/g, '$1')  // bold/italic
+            .replace(/`[^`]+`/g, '')              // inline code
+            .replace(/^[-*+]\s+/gm, '')           // list markers
+            .replace(/^>\s*/gm, '')               // blockquotes
+            .replace(/\s+/g, ' ').trim();         // collapse whitespace
+        description = cleanIntro.length > 200 ? cleanIntro.substring(0, 200) + "..." : cleanIntro;
         if (!description) description = "Educational module about " + moduleTitle;
         category = "Neuroanatomy";
         expertise = "Expert"; // Default to Expert

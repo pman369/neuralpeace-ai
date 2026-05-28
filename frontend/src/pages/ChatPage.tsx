@@ -24,6 +24,7 @@ import {
   generateAIResponseStream,
   updateSessionMetadata,
 } from '../lib/ai';
+import { generateEmbedding } from '../lib/embeddings';
 
 export default function ChatPage() {
   const { user, profile, refreshProfile } = useAuth();
@@ -181,10 +182,18 @@ export default function ChatPage() {
           .map((m) => ({ role: m.role, content: m.content }));
         history.push({ role: 'user', content });
 
+        let queryEmbedding: number[] | undefined;
+        try {
+          queryEmbedding = await generateEmbedding(content);
+        } catch (embedErr) {
+          console.warn('Local embedding generation failed, falling back to edge embedding:', embedErr);
+        }
+
         const stream = generateAIResponseStream({
           message: content,
           expertiseLevel,
           conversationHistory: history,
+          queryEmbedding,
         });
 
         let finalContent = '';

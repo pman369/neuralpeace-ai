@@ -8,8 +8,8 @@
 - **Cerebellum**: Motor coordination, cognitive timing
 
 ## Synaptic Plasticity
-- **Long-Term Potentiation (LTP)**: NMDA receptor activation â†’ CaÂ²âº influx â†’ AMPA receptor trafficking 
-- **Long-Term Depression (LTD)**: Low-frequency stimulation â†’ reduced synaptic strength
+- **Long-Term Potentiation (LTP)**: NMDA receptor activation → Ca²⁺ influx → AMPA receptor trafficking
+- **Long-Term Depression (LTD)**: Low-frequency stimulation → reduced synaptic strength
 - **Role of NMDA Receptors**: Coincidence detectors requiring both glutamate binding and postsynaptic depolarization
 - **Implications for Learning**: Hebbian plasticity ("fire together, wire together")
 

@@ -29,6 +29,7 @@ export interface ChatRequest {
   message: string;
   expertiseLevel: string;
   conversationHistory: { role: string; content: string }[];
+  queryEmbedding?: number[];
 }
 
 export interface ChatResponse {

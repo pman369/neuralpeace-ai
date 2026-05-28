@@ -51,8 +51,8 @@ serve(async (req) => {
     // Admin client for global cache (if needed to bypass cache RLS)
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-    const body: ChatRequest = await req.json();
-    const { message, expertiseLevel, conversationHistory, stream = true } = body;
+    const body: ChatRequest & { queryEmbedding?: number[] } = await req.json();
+    const { message, expertiseLevel, conversationHistory, stream = true, queryEmbedding: clientEmbedding } = body;
 
     if (!message) return new Response(JSON.stringify({ error: 'Message required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
@@ -79,7 +79,7 @@ serve(async (req) => {
 
     // 2. Parallel RAG, Safety Check (Intent/Safety), and Optional Expertise Detection
     const tasks: Promise<any>[] = [
-      performHybridRAG(supabase, message),
+      performHybridRAG(supabase, message, clientEmbedding),
       judgeUserIntent(message, GEMINI_API_KEY!, GEMINI_MODEL)
     ];
 
