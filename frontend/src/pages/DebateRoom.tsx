@@ -23,7 +23,35 @@ export default function DebateRoom() {
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [modelLoadingProgress, setModelLoadingProgress] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const workerRef = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    // Initialize Web Worker for Fallacy Detection
+    workerRef.current = new Worker(new URL('../lib/fallacyWorker.ts', import.meta.url), {
+      type: 'module'
+    });
+
+    workerRef.current.addEventListener('message', async (e) => {
+      if (e.data.status === 'progress') {
+        // Track model loading progress
+        setModelLoadingProgress(e.data.progress.progress || 0);
+      } else if (e.data.status === 'complete') {
+        const { messageId, fallacies } = e.data;
+        if (fallacies && fallacies.length > 0) {
+          // Update the argument in Supabase with the detected fallacies
+          await supabase.from('debate_arguments')
+            .update({ fallacies })
+            .eq('id', messageId);
+        }
+      }
+    });
+
+    return () => {
+      workerRef.current?.terminate();
+    };
+  }, []);
 
   useEffect(() => {
     if (!debateId) return;
@@ -77,16 +105,30 @@ export default function DebateRoom() {
 
     setSending(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).from('debate_arguments').insert({
+    const { data, error } = await (supabase as any).from('debate_arguments').insert({
       debate_id: debateId,
       user_id: user.id,
       content: inputValue.trim()
-    });
+    }).select().single();
 
     if (error) {
       console.error('Failed to post argument:', error);
     } else {
       setInputValue('');
+      // Trigger client-side fallacy detection
+      if (workerRef.current && data) {
+        workerRef.current.postMessage({
+          text: data.content,
+          messageId: data.id
+        });
+      }
+
+      // Trigger server-side fact checking
+      supabase.functions.invoke('fact-check', {
+        body: { argumentId: data.id, content: data.content }
+      }).then(({ error }) => {
+        if (error) console.error('Fact-check invocation failed:', error);
+      });
     }
     setSending(false);
   };
@@ -119,6 +161,11 @@ export default function DebateRoom() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {modelLoadingProgress > 0 && modelLoadingProgress < 100 && (
+            <div className="text-[10px] text-on-surface-variant font-bold uppercase">
+              Loading AI Models: {Math.round(modelLoadingProgress)}%
+            </div>
+          )}
           <div className="px-4 py-1.5 bg-secondary/10 text-secondary text-xs font-bold rounded-full border border-secondary/20 flex items-center gap-2">
             <BrainCircuit size={14} />
             AI Moderator Active
