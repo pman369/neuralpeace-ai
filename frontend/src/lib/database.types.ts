@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -13,6 +13,31 @@ export type Database = {
     PostgrestVersion: "14.5"
   }
   graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  public: {
     Tables: {
       debate_topics: {
         Row: {
@@ -120,32 +145,6 @@ export type Database = {
           }
         ]
       }
-
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-  public: {
-    Tables: {
       admin_activity_log: {
         Row: {
           action: string
@@ -514,6 +513,7 @@ export type Database = {
           display_name: string | null
           email: string
           expertise_level: string | null
+          active_session_id?: string | null
           id: string
           updated_at: string
         }
@@ -523,6 +523,7 @@ export type Database = {
           display_name?: string | null
           email: string
           expertise_level?: string | null
+          active_session_id?: string | null
           id: string
           updated_at?: string
         }
@@ -532,6 +533,7 @@ export type Database = {
           display_name?: string | null
           email?: string
           expertise_level?: string | null
+          active_session_id?: string | null
           id?: string
           updated_at?: string
         }
