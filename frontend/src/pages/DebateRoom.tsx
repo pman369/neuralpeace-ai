@@ -10,7 +10,8 @@ import {
   AlertCircle, 
   ShieldCheck, 
   Loader2,
-  BrainCircuit
+  BrainCircuit,
+  Flag
 } from 'lucide-react';
 
 
@@ -24,6 +25,7 @@ export default function DebateRoom() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [modelLoadingProgress, setModelLoadingProgress] = useState(0);
+  const [debateStatus, setDebateStatus] = useState<string | null>('active');
   const scrollRef = useRef<HTMLDivElement>(null);
   const workerRef = useRef<Worker | null>(null);
 
@@ -60,13 +62,13 @@ export default function DebateRoom() {
     async function loadData() {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data, error } = await (supabase as any)
-          .from('debate_arguments')
-          .select('*')
-          .eq('debate_id', debateId)
-          .order('created_at', { ascending: true });
+        const [debateRes, argsRes] = await Promise.all([
+          (supabase as any).from('debates').select('status').eq('id', debateId).single(),
+          (supabase as any).from('debate_arguments').select('*').eq('debate_id', debateId).order('created_at', { ascending: true })
+        ]);
 
-        if (!error && data) setMessages(data as DebateArgument[]);
+        if (!debateRes.error && debateRes.data) setDebateStatus(debateRes.data.status);
+        if (!argsRes.error && argsRes.data) setMessages(argsRes.data as DebateArgument[]);
       } finally {
         setLoading(false);
       }
@@ -86,6 +88,20 @@ export default function DebateRoom() {
         },
         (payload) => {
           setMessages((prev) => [...prev, payload.new as DebateArgument]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'debates',
+          filter: `id=eq.${debateId}`
+        },
+        (payload) => {
+          if (payload.new && (payload.new as any).status) {
+            setDebateStatus((payload.new as any).status);
+          }
         }
       )
       .subscribe();
@@ -133,6 +149,22 @@ export default function DebateRoom() {
     setSending(false);
   };
 
+  const handleEndDebate = async () => {
+    if (!debateId || debateStatus === 'closed') return;
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from('debates')
+      .update({ status: 'closed', ended_at: new Date().toISOString() })
+      .eq('id', debateId);
+      
+    if (error) {
+      console.error('Failed to end debate:', error);
+    } else {
+      setDebateStatus('closed');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -161,6 +193,15 @@ export default function DebateRoom() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {debateStatus === 'active' && (
+            <button 
+              onClick={handleEndDebate}
+              className="px-4 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 text-xs font-bold rounded-full border border-red-500/20 flex items-center gap-2 transition-all"
+            >
+              <Flag size={14} />
+              End Debate
+            </button>
+          )}
           {modelLoadingProgress > 0 && modelLoadingProgress < 100 && (
             <div className="text-[10px] text-on-surface-variant font-bold uppercase">
               Loading AI Models: {Math.round(modelLoadingProgress)}%
@@ -226,21 +267,28 @@ export default function DebateRoom() {
 
       {/* Input Area */}
       <footer className="p-6 bg-surface-container-low border-t border-outline-variant/15">
-        <form onSubmit={handleSend} className="max-w-4xl mx-auto flex gap-4">
-          <input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Present your argument... (citing sources is encouraged)"
-            className="flex-1 bg-surface-container-lowest border border-outline/20 rounded-2xl px-6 py-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-inner"
-          />
-          <button
-            type="submit"
-            disabled={!inputValue.trim() || sending}
-            className="bg-primary text-on-primary p-4 rounded-2xl shadow-lg hover:shadow-primary/20 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
-          >
-            {sending ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-          </button>
-        </form>
+        {debateStatus === 'closed' ? (
+          <div className="max-w-4xl mx-auto flex gap-4 p-4 items-center justify-center text-on-surface-variant bg-surface-container-highest rounded-2xl border border-outline-variant/30">
+            <Flag size={20} className="text-primary" />
+            <span className="font-bold">This debate has concluded. Badges and reputation have been awarded!</span>
+          </div>
+        ) : (
+          <form onSubmit={handleSend} className="max-w-4xl mx-auto flex gap-4">
+            <input
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Present your argument... (citing sources is encouraged)"
+              className="flex-1 bg-surface-container-lowest border border-outline/20 rounded-2xl px-6 py-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-inner"
+            />
+            <button
+              type="submit"
+              disabled={!inputValue.trim() || sending}
+              className="bg-primary text-on-primary p-4 rounded-2xl shadow-lg hover:shadow-primary/20 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
+            >
+              {sending ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+            </button>
+          </form>
+        )}
       </footer>
     </div>
   );

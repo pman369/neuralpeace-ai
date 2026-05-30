@@ -11,6 +11,8 @@ export interface UserProfile {
   avatar_url: string | null;
   active_session_id: string | null;
   created_at: string;
+  reputation_score: number;
+  badges: string[];
 }
 
 interface AuthContextType {

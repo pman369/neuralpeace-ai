@@ -514,6 +514,8 @@ export type Database = {
           email: string
           expertise_level: string | null
           active_session_id?: string | null
+          reputation_score: number
+          badges: string[]
           id: string
           updated_at: string
         }
@@ -524,6 +526,8 @@ export type Database = {
           email: string
           expertise_level?: string | null
           active_session_id?: string | null
+          reputation_score?: number
+          badges?: string[]
           id: string
           updated_at?: string
         }
@@ -534,6 +538,8 @@ export type Database = {
           email?: string
           expertise_level?: string | null
           active_session_id?: string | null
+          reputation_score?: number
+          badges?: string[]
           id?: string
           updated_at?: string
         }
