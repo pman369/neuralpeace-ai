@@ -4,6 +4,28 @@ import { motion } from 'motion/react';
 import { ArrowRight, Zap, Microscope, Brain, Activity } from 'lucide-react';
 import { Module } from '../types';
 
+/** Strip common markdown syntax tokens for plain-text card previews. */
+function stripMarkdown(text: string): string {
+  return text
+    // Remove headings (##, ###, etc.)
+    .replace(/^#{1,6}\s+/gm, '')
+    // Remove bold/italic (**text**, *text*, __text__, _text_)
+    .replace(/[*_]{1,3}(.*?)[*_]{1,3}/g, '$1')
+    // Remove inline code
+    .replace(/`([^`]+)`/g, '$1')
+    // Remove link syntax [text](url)
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    // Remove blockquote markers
+    .replace(/^>\s*/gm, '')
+    // Remove list markers
+    .replace(/^[-*+]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, '')
+    // Collapse multiple spaces/newlines
+    .replace(/\n{2,}/g, ' ')
+    .replace(/\n/g, ' ')
+    .trim();
+}
+
 interface ModuleCardProps {
   module: Module;
 }
@@ -56,7 +78,7 @@ const ModuleCard: FC<ModuleCardProps> = ({ module }) => {
       </h3>
       
       <p className="text-on-surface-variant text-sm leading-relaxed mb-6 flex-grow">
-        {module.description}
+        {stripMarkdown(module.description)}
       </p>
 
       <div className="flex items-center justify-between pt-4 border-t border-outline-variant/10">

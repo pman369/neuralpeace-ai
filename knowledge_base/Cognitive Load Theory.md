@@ -5,7 +5,7 @@
 - **Phonological Loop**: Verbal working memory, subvocal rehearsal
 - **Visuospatial Sketchpad**: Visual and spatial information maintenance
 - **Episodic Buffer**: Integration across subsystems and long-term memory
-- **Capacity Limits**: 4Â±1 chunks (Cowan, 2001), revised from Miller's 7Â±2'
+- **Capacity Limits**: 4±1 chunks (Cowan, 2001), revised from Miller's 7±2
 
 ## Types of Cognitive Load
 - **Intrinsic Load**: Inherent complexity of the material (element interactivity)
