@@ -1,11 +1,11 @@
 # Bayesian Inference Models
 
 ## Hodgkin-Huxley Model
-- **Voltage-Gated Ion Channels**: Naâº and Kâº conductance equations
+- **Voltage-Gated Ion Channels**: Na⁺ and K⁺ conductance equations
 - **Action Potential Generation**: Threshold dynamics, refractory periods
 - **Equations**:
   ```
-  C_m * dV/dt = I_ext - g_Na * mÂ³ * h * (V - E_Na) - g_K * nâ´ * (V - E_K) - g_L * (V - E_L)
+  C_m * dV/dt = I_ext - g_Na * m³ * h * (V - E_Na) - g_K * n⁴ * (V - E_K) - g_L * (V - E_L)
   ```
 
 ## Connectomics

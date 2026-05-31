@@ -1,5 +1,6 @@
 // Supabase Edge Function: embed-knowledge
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.42.0';
+import { corsHeaders } from '../_shared/cors.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -13,11 +14,7 @@ const model = new Supabase.ai.Session('gte-small');
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
+      headers: corsHeaders,
     });
   }
 
@@ -33,7 +30,7 @@ Deno.serve(async (req) => {
       if (fetchError) throw fetchError;
       if (!sections || sections.length === 0) {
         return new Response(JSON.stringify({ success: true, syncedCount: 0 }), {
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
@@ -53,7 +50,7 @@ Deno.serve(async (req) => {
       if (upsertError) throw upsertError;
 
       return new Response(JSON.stringify({ success: true, syncedCount: 1 }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -61,7 +58,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
