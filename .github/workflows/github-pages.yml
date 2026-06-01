@@ -24,7 +24,7 @@ jobs:
           node-version: 20 # Use a stable Node.js version
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: 'repowiki' # Specify the directory to deploy
 
