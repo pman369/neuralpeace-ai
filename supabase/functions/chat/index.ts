@@ -5,7 +5,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.42.0';
 import { getHash, checkCache, updateCache } from './cache.ts';
 import { performHybridRAG } from './rag.ts';
 import { analyzeMessage } from './guardrails.ts';
+import { enqueueGemini } from './batcher.ts';
 import { getPersonaPrompt } from './prompts.ts';
+
 import { ExpertiseLevel } from './types.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 import { Logger } from '../_shared/logger.ts';
@@ -113,61 +115,65 @@ Educational Tool ONLY. Not Medical Advice.`;
       { role: 'user', content: message },
     ];
 
-    // 3. Gemini Call
-    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GEMINI_API_KEY}` },
-      body: JSON.stringify({ model: GEMINI_MODEL, messages, temperature: 0.3, max_tokens: 2000, stream }),
-    });
-
-    if (!geminiResponse.ok) throw new Error(`API Error: ${geminiResponse.status}`);
-
+    // 3. Gemini Call (batched for non‑streaming)
+    let geminiResult: { content: string; citations: any[] };
     if (!stream) {
-      const data = await geminiResponse.json();
-      const responsePayload = { content: data.choices?.[0]?.message?.content ?? '', citations: data.citations ?? [] };
-      await updateCache(supabaseAdmin, cacheKey, activeExpertise, responsePayload);
-      return new Response(JSON.stringify({ ...responsePayload, isMedical: analysis.isMedical }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    // 4. Streaming
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-    const { readable, writable } = new TransformStream();
-    const writer = writable.getWriter();
-    const reader = geminiResponse.body?.getReader();
-
-    (async () => {
-      let fullContent = '';
-      let citations = [];
-      let buffer = '';
-      try {
-        while (true) {
-          const { done, value } = await reader!.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const jsonStr = line.replace('data: ', '');
-            if (jsonStr === '[DONE]') continue;
-            try {
-              const parsed = JSON.parse(jsonStr);
-              fullContent += parsed.choices?.[0]?.delta?.content ?? '';
-              if (parsed.citations) citations = parsed.citations;
-              await writer.write(encoder.encode(`data: ${JSON.stringify(parsed)}\n\n`));
-            } catch {}
+      // Use the batcher to coalesce rapid requests
+      const geminiPayload = {
+        role: 'user',
+        content: message,
+      };
+      const systemMessage = { role: 'system', content: systemPrompt };
+      const batchResult = await enqueueGemini([systemMessage, geminiPayload], false, GEMINI_API_KEY!, GEMINI_MODEL);
+      geminiResult = { content: batchResult.content, citations: batchResult.citations };
+      // Cache the non‑stream response
+      await updateCache(supabaseAdmin, cacheKey, activeExpertise, { content: geminiResult.content, citations: geminiResult.citations });
+      return new Response(JSON.stringify({ ...geminiResult, isMedical: analysis.isMedical }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    } else {
+      // Fallback to original streaming implementation for now
+      const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GEMINI_API_KEY}` },
+        body: JSON.stringify({ model: GEMINI_MODEL, messages, temperature: 0.3, max_tokens: 2000, stream }),
+      });
+      if (!geminiResponse.ok) throw new Error(`API Error: ${geminiResponse.status}`);
+      // Streaming logic (unchanged)
+      const encoder = new TextEncoder();
+      const decoder = new TextDecoder();
+      const { readable, writable } = new TransformStream();
+      const writer = writable.getWriter();
+      const reader = geminiResponse.body?.getReader();
+      (async () => {
+        let fullContent = '';
+        let citations = [];
+        let buffer = '';
+        try {
+          while (true) {
+            const { done, value } = await reader!.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              const jsonStr = line.replace('data: ', '');
+              if (jsonStr === '[DONE]') continue;
+              try {
+                const parsed = JSON.parse(jsonStr);
+                fullContent += parsed.choices?.[0]?.delta?.content ?? '';
+                if (parsed.citations) citations = parsed.citations;
+                await writer.write(encoder.encode(`data: ${JSON.stringify(parsed)}\n\n`));
+              } catch {}
+            }
           }
+          await writer.write(encoder.encode('data: [DONE]\n\n'));
+          if (fullContent) await updateCache(supabaseAdmin, cacheKey, activeExpertise, { content: fullContent, citations });
+        } finally {
+          writer.close();
         }
-        await writer.write(encoder.encode('data: [DONE]\n\n'));
-        if (fullContent) await updateCache(supabaseAdmin, cacheKey, activeExpertise, { content: fullContent, citations });
-      } finally {
-        writer.close();
-      }
-    })();
-
-    return new Response(readable, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' } });
-
+      })();
+      return new Response(readable, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' } });
+    }
   } catch (error) {
     logger.error('Chat function error', { error: error.message });
     return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
