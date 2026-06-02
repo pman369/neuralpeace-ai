@@ -4,9 +4,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.42.0';
 import { getHash, checkCache, updateCache } from './cache.ts';
 import { performHybridRAG } from './rag.ts';
-import { judgeUserIntent } from './guardrails.ts';
+import { analyzeMessage } from './guardrails.ts';
 import { getPersonaPrompt } from './prompts.ts';
-import { detectExpertiseLevel } from './lens.ts';
 import { ExpertiseLevel } from './types.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 import { Logger } from '../_shared/logger.ts';
@@ -77,28 +76,24 @@ serve(async (req) => {
       return new Response(JSON.stringify({ ...cachedResponse, cached: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // 2. Parallel RAG, Safety Check (Intent/Safety), and Optional Expertise Detection
+    // 2. Parallel RAG and Coalesced Message Analysis (Combined Intent, Safety, & Expertise Detection)
     const tasks: Promise<any>[] = [
       performHybridRAG(supabase, message, clientEmbedding),
-      judgeUserIntent(message, GEMINI_API_KEY!, GEMINI_MODEL)
+      analyzeMessage(message, GEMINI_API_KEY!, expertiseLevel === 'Auto', GEMINI_MODEL)
     ];
 
-    if (expertiseLevel === 'Auto') {
-      tasks.push(detectExpertiseLevel(message, GEMINI_API_KEY!, GEMINI_MODEL));
-    }
-
-    const [context, safety, detectedLens] = await Promise.all(tasks);
+    const [context, analysis] = await Promise.all(tasks);
     
-    const activeExpertise = (expertiseLevel === 'Auto' && detectedLens) 
-      ? detectedLens.level 
+    const activeExpertise = (expertiseLevel === 'Auto' && analysis.detectedExpertise) 
+      ? analysis.detectedExpertise as ExpertiseLevel
       : expertiseLevel;
 
-    const personaPrompt = getPersonaPrompt(activeExpertise || 'Expert', safety.intent);
+    const personaPrompt = getPersonaPrompt(activeExpertise || 'Expert', analysis.intent);
     
     // Add context and mood mirror to the persona prompt
-    const moodInstruction = safety.sentiment === 'frustrated' 
+    const moodInstruction = analysis.sentiment === 'frustrated' 
       ? "User seems frustrated. Be extra encouraging, use simpler terms, and offer a supportive analogy." 
-      : safety.sentiment === 'skeptical' 
+      : analysis.sentiment === 'skeptical' 
         ? "User is skeptical. Focus heavily on evidence, experimental data, and technical rigor." 
         : "";
 
@@ -131,7 +126,7 @@ Educational Tool ONLY. Not Medical Advice.`;
       const data = await geminiResponse.json();
       const responsePayload = { content: data.choices?.[0]?.message?.content ?? '', citations: data.citations ?? [] };
       await updateCache(supabaseAdmin, cacheKey, activeExpertise, responsePayload);
-      return new Response(JSON.stringify({ ...responsePayload, isMedical: safety.isMedical }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ ...responsePayload, isMedical: analysis.isMedical }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // 4. Streaming

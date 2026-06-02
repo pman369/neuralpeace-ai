@@ -23,16 +23,16 @@ const ChatHistory: FC<ChatHistoryProps> = ({
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadSessions();
-  }, []);
-
   const loadSessions = async () => {
     setLoading(true);
     const data = await fetchChatSessions();
     setSessions(data);
     setLoading(false);
   };
+
+  useEffect(() => {
+    loadSessions();
+  }, []);
 
   const handleDelete = async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();

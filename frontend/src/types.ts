@@ -1,4 +1,10 @@
-export type Category = 'Neuroanatomy' | 'Methods' | 'Computational' | 'Psychology' | 'Therapeutics' | 'All Modules';
+export type Category =
+  | 'Neuroanatomy'
+  | 'Methods'
+  | 'Computational'
+  | 'Psychology'
+  | 'Therapeutics'
+  | 'All Modules';
 
 export type ExpertiseLevel = 'Novice' | 'Practitioner' | 'Expert' | 'Scholar' | 'Auto';
 

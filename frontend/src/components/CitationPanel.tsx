@@ -1,6 +1,16 @@
 import { FC, useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { X, ExternalLink, BookOpen, User, Calendar, FileText, Loader2, BarChart3, Quote } from 'lucide-react';
+import {
+  X,
+  ExternalLink,
+  BookOpen,
+  User,
+  Calendar,
+  FileText,
+  Loader2,
+  BarChart3,
+  Quote,
+} from 'lucide-react';
 import { Citation, fetchCitationDetails } from '../lib/ai';
 
 interface EnrichedCitation {
@@ -110,13 +120,17 @@ const CitationPanel: FC<CitationPanelProps> = ({ citation, onClose }) => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Total Citations</span>
+                  <span className="text-[10px] font-bold text-outline uppercase tracking-wider">
+                    Total Citations
+                  </span>
                   <span className="text-2xl font-black text-secondary">
                     {details.citationCount?.toLocaleString() ?? '---'}
                   </span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Highly Influential</span>
+                  <span className="text-[10px] font-bold text-outline uppercase tracking-wider">
+                    Highly Influential
+                  </span>
                   <span className="text-2xl font-black text-secondary">
                     {details.influentialCitationCount?.toLocaleString() ?? '---'}
                   </span>
@@ -137,7 +151,8 @@ const CitationPanel: FC<CitationPanelProps> = ({ citation, onClose }) => {
             </div>
           ) : (
             <p className="text-sm text-on-surface-variant leading-relaxed italic">
-              "No additional metrics found for this specific citation. Displaying primary metadata only."
+              "No additional metrics found for this specific citation. Displaying primary metadata
+              only."
             </p>
           )}
         </section>
@@ -151,7 +166,10 @@ const CitationPanel: FC<CitationPanelProps> = ({ citation, onClose }) => {
             </h2>
             <div className="flex flex-wrap gap-2">
               {displayAuthors.map((author, i) => (
-                <span key={i} className="text-sm bg-primary/5 text-primary border border-primary/10 px-3 py-1 rounded-lg">
+                <span
+                  key={i}
+                  className="text-sm bg-primary/5 text-primary border border-primary/10 px-3 py-1 rounded-lg"
+                >
                   {author}
                 </span>
               ))}
@@ -177,10 +195,13 @@ const CitationPanel: FC<CitationPanelProps> = ({ citation, onClose }) => {
                   <span className="text-xs font-bold text-outline uppercase">DOI Provider</span>
                   <span className="text-sm font-medium text-primary break-all">{citation.doi}</span>
                 </div>
-                <ExternalLink size={16} className="text-outline group-hover:text-primary transition-colors" />
+                <ExternalLink
+                  size={16}
+                  className="text-outline group-hover:text-primary transition-colors"
+                />
               </a>
             )}
-            
+
             <a
               href={`https://scholar.google.com/scholar?q=${encodeURIComponent(citation.title)}`}
               target="_blank"
@@ -191,7 +212,10 @@ const CitationPanel: FC<CitationPanelProps> = ({ citation, onClose }) => {
                 <span className="text-xs font-bold text-outline uppercase">Search Engine</span>
                 <span className="text-sm font-medium text-primary">Google Scholar</span>
               </div>
-              <ExternalLink size={16} className="text-outline group-hover:text-primary transition-colors" />
+              <ExternalLink
+                size={16}
+                className="text-outline group-hover:text-primary transition-colors"
+              />
             </a>
           </div>
         </section>
@@ -200,7 +224,8 @@ const CitationPanel: FC<CitationPanelProps> = ({ citation, onClose }) => {
       {/* Footer */}
       <div className="p-6 bg-surface-container-low border-t border-outline-variant/10">
         <p className="text-[10px] text-outline leading-tight text-center">
-          NeuralPeace AI leverages Perplexity AI and Semantic Scholar to curate evidence-based neuroscience data.
+          NeuralPeace AI leverages Perplexity AI and Semantic Scholar to curate evidence-based
+          neuroscience data.
         </p>
       </div>
     </motion.aside>

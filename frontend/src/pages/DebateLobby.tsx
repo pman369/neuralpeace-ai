@@ -5,11 +5,11 @@ import { supabase } from '../lib/supabase';
 import type { DebateTopic, Debate } from '../lib/database.types.supplement';
 import { MessagesSquare, Trophy, Users, Loader2, ArrowRight } from 'lucide-react';
 
-
 export default function DebateLobby() {
   const navigate = useNavigate();
   const [topics, setTopics] = useState<DebateTopic[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeDebatesCount] = useState(() => Math.floor(Math.random() * 10) + 2);
 
   useEffect(() => {
     async function loadTopics() {
@@ -18,7 +18,7 @@ export default function DebateLobby() {
         .from('debate_topics')
         .select('*')
         .eq('is_active', true);
-      
+
       if (!error && data) setTopics(data as DebateTopic[]);
       setLoading(false);
     }
@@ -45,7 +45,7 @@ export default function DebateLobby() {
         .insert({ topic_id: topicId, status: 'waiting' })
         .select()
         .single();
-      
+
       if (created) navigate(`/debate/${(created as Debate).id}`);
     }
   };
@@ -58,8 +58,8 @@ export default function DebateLobby() {
           Mind Meld Arena
         </h1>
         <p className="text-on-surface-variant text-lg max-w-2xl">
-          Enter the arena to debate neuroscience controversies. Fact-check your peers, 
-          avoid logical fallacies, and earn neural reputation.
+          Enter the arena to debate neuroscience controversies. Fact-check your peers, avoid logical
+          fallacies, and earn neural reputation.
         </p>
       </div>
 
@@ -113,7 +113,9 @@ export default function DebateLobby() {
           <Users size={18} className="text-primary" />
           <div>
             <div className="text-[10px] font-bold text-outline uppercase">Active Debates</div>
-            <div className="text-sm font-bold text-on-surface">{Math.floor(Math.random() * 10) + 2}</div>
+            <div className="text-sm font-bold text-on-surface">
+              {activeDebatesCount}
+            </div>
           </div>
         </div>
       </div>

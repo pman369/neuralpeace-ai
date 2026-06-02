@@ -15,23 +15,29 @@ const MarkdownRenderer: FC<MarkdownRendererProps> = memo(({ content }) => {
           <h1 className="text-3xl font-bold text-on-surface mt-8 mb-4 font-headline">{children}</h1>
         ),
         h2: ({ children }) => (
-          <h2 className="text-2xl font-semibold text-on-surface mt-6 mb-3 font-headline">{children}</h2>
+          <h2 className="text-2xl font-semibold text-on-surface mt-6 mb-3 font-headline">
+            {children}
+          </h2>
         ),
         h3: ({ children }) => (
-          <h3 className="text-xl font-semibold text-on-surface mt-4 mb-2 font-headline">{children}</h3>
+          <h3 className="text-xl font-semibold text-on-surface mt-4 mb-2 font-headline">
+            {children}
+          </h3>
         ),
         p: ({ children }) => (
           <p className="text-on-surface-variant leading-relaxed mb-4">{children}</p>
         ),
         ul: ({ children }) => (
-          <ul className="list-disc list-inside text-on-surface-variant leading-relaxed mb-4 space-y-1">{children}</ul>
+          <ul className="list-disc list-inside text-on-surface-variant leading-relaxed mb-4 space-y-1">
+            {children}
+          </ul>
         ),
         ol: ({ children }) => (
-          <ol className="list-decimal list-inside text-on-surface-variant leading-relaxed mb-4 space-y-1">{children}</ol>
+          <ol className="list-decimal list-inside text-on-surface-variant leading-relaxed mb-4 space-y-1">
+            {children}
+          </ol>
         ),
-        li: ({ children }) => (
-          <li className="ml-4">{children}</li>
-        ),
+        li: ({ children }) => <li className="ml-4">{children}</li>,
         table: ({ children }) => (
           <div className="overflow-x-auto mb-4">
             <table className="min-w-full text-sm text-on-surface-variant border border-outline-variant/20 rounded-lg">
@@ -69,7 +75,12 @@ const MarkdownRenderer: FC<MarkdownRendererProps> = memo(({ content }) => {
           </blockquote>
         ),
         a: ({ href, children }) => (
-          <a href={href} className="text-primary underline hover:text-primary-container" target="_blank" rel="noopener noreferrer">
+          <a
+            href={href}
+            className="text-primary underline hover:text-primary-container"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {children}
           </a>
         ),

@@ -47,9 +47,7 @@ const ExpertiseSelector: React.FC<ExpertiseSelectorProps> = ({
                       : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[14px]">
-                    {item.icon}
-                  </span>
+                  <span className="material-symbols-outlined text-[14px]">{item.icon}</span>
                   {item.level}
                 </button>
               );
@@ -60,13 +58,15 @@ const ExpertiseSelector: React.FC<ExpertiseSelectorProps> = ({
         <button
           onClick={() => setAtlasOpen(!atlasOpen)}
           className={`p-1.5 rounded-lg transition-all flex items-center gap-2 px-3 flex-shrink-0 ${
-            atlasOpen 
-              ? 'bg-secondary text-on-secondary shadow-md' 
+            atlasOpen
+              ? 'bg-secondary text-on-secondary shadow-md'
               : 'text-on-surface-variant hover:bg-surface-container-high border border-outline-variant/20'
           }`}
         >
           <Box size={16} />
-          <span className="text-[11px] font-bold uppercase tracking-tight hidden xs:inline">3D Atlas</span>
+          <span className="text-[11px] font-bold uppercase tracking-tight hidden xs:inline">
+            3D Atlas
+          </span>
         </button>
       </div>
     </div>

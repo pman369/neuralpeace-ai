@@ -1,9 +1,25 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Save, Loader2, User, Mail, BookOpen, LogOut, Trash2, Shield, ShieldCheck, Key, Trophy, Star, Award, Sparkles, Flame, Zap } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  Loader2,
+  User,
+  Mail,
+  LogOut,
+  Trash2,
+  Shield,
+  ShieldCheck,
+  Trophy,
+  Star,
+  Award,
+  Sparkles,
+  Flame,
+  Zap,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import { updateProfile, updateExpertiseLevel, resetPassword } from '../lib/auth';
+import { updateProfile, resetPassword } from '../lib/auth';
 import { EXPERTISE_LEVELS } from '../constants';
 import { ExpertiseLevel } from '../types';
 
@@ -106,7 +122,10 @@ export default function SettingsPage() {
             <form onSubmit={handleSave}>
               {/* Display Name */}
               <div className="mb-4">
-                <label htmlFor="displayName" className="block text-sm font-medium text-on-surface mb-1.5">
+                <label
+                  htmlFor="displayName"
+                  className="block text-sm font-medium text-on-surface mb-1.5"
+                >
                   Display name
                 </label>
                 <input
@@ -122,9 +141,7 @@ export default function SettingsPage() {
 
               {/* Email (read-only) */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-on-surface mb-1.5">
-                  Email
-                </label>
+                <label className="block text-sm font-medium text-on-surface mb-1.5">Email</label>
                 <div className="flex items-center gap-2 px-4 py-3 bg-surface-container-high rounded-xl text-on-surface-variant text-sm">
                   <Mail size={14} className="text-outline flex-shrink-0" />
                   {profile?.email ?? user.email}
@@ -150,9 +167,7 @@ export default function SettingsPage() {
                             : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
                         }`}
                       >
-                        <span className="material-symbols-outlined text-[16px]">
-                          {item.icon}
-                        </span>
+                        <span className="material-symbols-outlined text-[16px]">{item.icon}</span>
                         {item.level}
                       </button>
                     );
@@ -211,14 +226,24 @@ export default function SettingsPage() {
               <div className="flex items-center gap-5 mb-6 p-4 bg-gradient-to-r from-amber-500/5 via-surface-container-low to-primary/5 rounded-xl border border-outline-variant/10">
                 <div className="relative w-16 h-16 flex-shrink-0">
                   <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
-                    <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" strokeWidth="4" className="text-outline-variant/10" />
                     <circle
-                      cx="32" cy="32" r="28"
+                      cx="32"
+                      cy="32"
+                      r="28"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      className="text-outline-variant/10"
+                    />
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r="28"
                       fill="none"
                       stroke="url(#repGradient)"
                       strokeWidth="4"
                       strokeLinecap="round"
-                      strokeDasharray={`${Math.min((profile?.reputation_score ?? 0) / 100 * 175.9, 175.9)} 175.9`}
+                      strokeDasharray={`${Math.min(((profile?.reputation_score ?? 0) / 100) * 175.9, 175.9)} 175.9`}
                     />
                     <defs>
                       <linearGradient id="repGradient" x1="0" y1="0" x2="1" y2="1">
@@ -235,7 +260,9 @@ export default function SettingsPage() {
                   <div className="text-2xl font-black text-on-surface tracking-tight">
                     {profile?.reputation_score ?? 0}
                   </div>
-                  <div className="text-xs text-on-surface-variant font-medium">Reputation Points</div>
+                  <div className="text-xs text-on-surface-variant font-medium">
+                    Reputation Points
+                  </div>
                 </div>
               </div>
 
@@ -253,9 +280,7 @@ export default function SettingsPage() {
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-outline-variant/5 mb-3">
                           <Sparkles size={20} className="text-outline" />
                         </div>
-                        <p className="text-sm text-on-surface-variant font-medium">
-                          No badges yet
-                        </p>
+                        <p className="text-sm text-on-surface-variant font-medium">No badges yet</p>
                         <p className="text-xs text-outline mt-1">
                           End your first debate to earn reputation and badges!
                         </p>
@@ -265,11 +290,26 @@ export default function SettingsPage() {
                   return (
                     <div className="grid grid-cols-2 gap-3">
                       {badges.map((badge, i) => {
-                        const config: Record<string, { icon: typeof Star; color: string; bg: string }> = {
-                          'Source Master': { icon: ShieldCheck, color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-                          'Debater': { icon: Zap, color: 'text-violet-500', bg: 'bg-violet-500/10 border-violet-500/20' },
+                        const config: Record<
+                          string,
+                          { icon: typeof Star; color: string; bg: string }
+                        > = {
+                          'Source Master': {
+                            icon: ShieldCheck,
+                            color: 'text-emerald-500',
+                            bg: 'bg-emerald-500/10 border-emerald-500/20',
+                          },
+                          Debater: {
+                            icon: Zap,
+                            color: 'text-violet-500',
+                            bg: 'bg-violet-500/10 border-violet-500/20',
+                          },
                         };
-                        const c = config[badge] ?? { icon: Star, color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20' };
+                        const c = config[badge] ?? {
+                          icon: Star,
+                          color: 'text-amber-500',
+                          bg: 'bg-amber-500/10 border-amber-500/20',
+                        };
                         const Icon = c.icon;
                         return (
                           <motion.div
@@ -303,14 +343,22 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-bold text-on-surface">Password</h3>
-                    <p className="text-xs text-on-surface-variant">Update your security credentials</p>
+                    <p className="text-xs text-on-surface-variant">
+                      Update your security credentials
+                    </p>
                   </div>
                   <button
                     onClick={handlePasswordReset}
                     disabled={resetLoading || resetSent}
                     className="flex items-center gap-2 px-4 py-2 bg-surface-container-lowest border border-outline-variant/20 rounded-lg text-xs font-bold text-primary hover:bg-primary/5 transition-all"
                   >
-                    {resetLoading ? <Loader2 size={14} className="animate-spin" /> : resetSent ? 'Email Sent!' : 'Reset Password'}
+                    {resetLoading ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : resetSent ? (
+                      'Email Sent!'
+                    ) : (
+                      'Reset Password'
+                    )}
                   </button>
                 </div>
               </div>

@@ -1,7 +1,13 @@
 import { FC, useState } from 'react';
 import { motion } from 'motion/react';
 import { Sun, Moon, Monitor, Palette, RotateCcw, Check } from 'lucide-react';
-import { useTheme, ThemeMode, ThemeColors, DEFAULT_LIGHT_COLORS, DEFAULT_DARK_COLORS } from '../lib/ThemeContext';
+import {
+  useTheme,
+  ThemeMode,
+  ThemeColors,
+  DEFAULT_LIGHT_COLORS,
+  DEFAULT_DARK_COLORS,
+} from '../lib/ThemeContext';
 
 interface ThemeSettingsProps {
   onClose: () => void;
@@ -39,12 +45,18 @@ const ThemeSettings: FC<ThemeSettingsProps> = ({ onClose }) => {
   };
 
   const isDefault =
-    theme.colors.primary === (isDark ? DEFAULT_DARK_COLORS.primary : DEFAULT_LIGHT_COLORS.primary) &&
-    theme.colors.secondary === (isDark ? DEFAULT_DARK_COLORS.secondary : DEFAULT_LIGHT_COLORS.secondary) &&
-    theme.colors.tertiary === (isDark ? DEFAULT_DARK_COLORS.tertiary : DEFAULT_LIGHT_COLORS.tertiary);
+    theme.colors.primary ===
+      (isDark ? DEFAULT_DARK_COLORS.primary : DEFAULT_LIGHT_COLORS.primary) &&
+    theme.colors.secondary ===
+      (isDark ? DEFAULT_DARK_COLORS.secondary : DEFAULT_LIGHT_COLORS.secondary) &&
+    theme.colors.tertiary ===
+      (isDark ? DEFAULT_DARK_COLORS.tertiary : DEFAULT_LIGHT_COLORS.tertiary);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -58,7 +70,10 @@ const ThemeSettings: FC<ThemeSettingsProps> = ({ onClose }) => {
             <Palette size={18} className="text-primary" />
             <h2 className="text-lg font-bold text-on-surface font-headline">Appearance</h2>
           </div>
-          <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface transition-colors text-sm font-medium">
+          <button
+            onClick={onClose}
+            className="text-on-surface-variant hover:text-on-surface transition-colors text-sm font-medium"
+          >
             Done
           </button>
         </div>
@@ -66,7 +81,9 @@ const ThemeSettings: FC<ThemeSettingsProps> = ({ onClose }) => {
         <div className="p-6 space-y-6">
           {/* Theme Mode */}
           <section>
-            <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Mode</h3>
+            <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-3">
+              Mode
+            </h3>
             <div className="grid grid-cols-3 gap-2">
               {modes.map(({ value, label, icon: Icon }) => (
                 <button
@@ -87,7 +104,9 @@ const ThemeSettings: FC<ThemeSettingsProps> = ({ onClose }) => {
 
           {/* Color Presets */}
           <section>
-            <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Color Presets</h3>
+            <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-3">
+              Color Presets
+            </h3>
             <div className="grid grid-cols-5 gap-2">
               {presets.map((preset) => (
                 <button
@@ -97,11 +116,22 @@ const ThemeSettings: FC<ThemeSettingsProps> = ({ onClose }) => {
                   title={preset.name}
                 >
                   <div className="flex gap-0.5">
-                    <div className="w-5 h-5 rounded-full border border-outline-variant/20" style={{ backgroundColor: preset.colors.primary }} />
-                    <div className="w-5 h-5 rounded-full border border-outline-variant/20 -ml-2" style={{ backgroundColor: preset.colors.secondary }} />
-                    <div className="w-5 h-5 rounded-full border border-outline-variant/20 -ml-2" style={{ backgroundColor: preset.colors.tertiary }} />
+                    <div
+                      className="w-5 h-5 rounded-full border border-outline-variant/20"
+                      style={{ backgroundColor: preset.colors.primary }}
+                    />
+                    <div
+                      className="w-5 h-5 rounded-full border border-outline-variant/20 -ml-2"
+                      style={{ backgroundColor: preset.colors.secondary }}
+                    />
+                    <div
+                      className="w-5 h-5 rounded-full border border-outline-variant/20 -ml-2"
+                      style={{ backgroundColor: preset.colors.tertiary }}
+                    />
                   </div>
-                  <span className="text-[10px] text-on-surface-variant group-hover:text-on-surface">{preset.name}</span>
+                  <span className="text-[10px] text-on-surface-variant group-hover:text-on-surface">
+                    {preset.name}
+                  </span>
                 </button>
               ))}
             </div>
@@ -109,7 +139,9 @@ const ThemeSettings: FC<ThemeSettingsProps> = ({ onClose }) => {
 
           {/* Custom Colors */}
           <section>
-            <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Custom Colors</h3>
+            <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-3">
+              Custom Colors
+            </h3>
             <div className="space-y-3">
               {[
                 { label: 'Primary', value: customPrimary, setter: setCustomPrimary },
@@ -117,7 +149,9 @@ const ThemeSettings: FC<ThemeSettingsProps> = ({ onClose }) => {
                 { label: 'Tertiary', value: customTertiary, setter: setCustomTertiary },
               ].map(({ label, value, setter }) => (
                 <div key={label} className="flex items-center gap-3">
-                  <label className="text-sm text-on-surface-variant w-20 flex-shrink-0">{label}</label>
+                  <label className="text-sm text-on-surface-variant w-20 flex-shrink-0">
+                    {label}
+                  </label>
                   <div className="relative flex-1">
                     <input
                       type="color"
@@ -157,15 +191,32 @@ const ThemeSettings: FC<ThemeSettingsProps> = ({ onClose }) => {
 
           {/* Preview */}
           <section>
-            <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Preview</h3>
+            <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-3">
+              Preview
+            </h3>
             <div className="flex gap-2">
-              <div className="flex-1 h-10 rounded-lg flex items-center justify-center text-xs font-bold text-on-primary" style={{ backgroundColor: theme.colors.primary }}>
+              <div
+                className="flex-1 h-10 rounded-lg flex items-center justify-center text-xs font-bold text-on-primary"
+                style={{ backgroundColor: theme.colors.primary }}
+              >
                 Primary
               </div>
-              <div className="flex-1 h-10 rounded-lg flex items-center justify-center text-xs font-bold" style={{ backgroundColor: theme.colors.secondary, color: isDark ? '#1a0a2e' : '#fff' }}>
+              <div
+                className="flex-1 h-10 rounded-lg flex items-center justify-center text-xs font-bold"
+                style={{
+                  backgroundColor: theme.colors.secondary,
+                  color: isDark ? '#1a0a2e' : '#fff',
+                }}
+              >
                 Secondary
               </div>
-              <div className="flex-1 h-10 rounded-lg flex items-center justify-center text-xs font-bold" style={{ backgroundColor: theme.colors.tertiary, color: isDark ? '#2e0a1e' : '#fff' }}>
+              <div
+                className="flex-1 h-10 rounded-lg flex items-center justify-center text-xs font-bold"
+                style={{
+                  backgroundColor: theme.colors.tertiary,
+                  color: isDark ? '#2e0a1e' : '#fff',
+                }}
+              >
                 Tertiary
               </div>
             </div>

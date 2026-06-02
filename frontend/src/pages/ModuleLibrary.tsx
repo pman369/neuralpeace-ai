@@ -60,20 +60,19 @@ export default function ModuleLibrary() {
 
   const filteredModules = useMemo(() => {
     return modules.filter((module) => {
-      const matchesCategory = currentCategory === 'All Modules' || module.category === currentCategory;
+      const matchesCategory =
+        currentCategory === 'All Modules' || module.category === currentCategory;
       const matchesExpertise = module.expertise === currentExpertise;
-      const matchesSearch = module.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           module.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch =
+        module.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        module.description.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesExpertise && matchesSearch;
     });
   }, [modules, currentCategory, currentExpertise, searchQuery]);
 
   return (
     <div className="flex flex-1 pt-16">
-      <Sidebar
-        currentLevel={currentExpertise}
-        onLevelChange={setCurrentExpertise}
-      />
+      <Sidebar currentLevel={currentExpertise} onLevelChange={setCurrentExpertise} />
 
       <main className="flex-1 lg:ml-64 pb-16 px-6 lg:px-12 max-w-7xl mx-auto w-full">
         {/* Hero Header & Search Section */}
@@ -91,13 +90,17 @@ export default function ModuleLibrary() {
             transition={{ delay: 0.1 }}
             className="text-on-surface-variant max-w-2xl text-lg leading-relaxed mb-8"
           >
-            Explore the latest frontiers in neuroanatomy, computational modeling, and therapeutic methodologies curated by AI expertise.
+            Explore the latest frontiers in neuroanatomy, computational modeling, and therapeutic
+            methodologies curated by AI expertise.
           </motion.p>
 
           {/* Search Bar Component */}
           <div className="relative group max-w-3xl">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="text-outline group-focus-within:text-primary transition-colors" size={20} />
+              <Search
+                className="text-outline group-focus-within:text-primary transition-colors"
+                size={20}
+              />
             </div>
             <input
               type="text"
@@ -123,19 +126,14 @@ export default function ModuleLibrary() {
                     : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
                 }`}
               >
-                <span className="material-symbols-outlined text-[16px]">
-                  {item.icon}
-                </span>
+                <span className="material-symbols-outlined text-[16px]">{item.icon}</span>
                 {item.level}
               </button>
             );
           })}
         </div>
 
-        <CategoryFilter
-          currentCategory={currentCategory}
-          onCategoryChange={setCurrentCategory}
-        />
+        <CategoryFilter currentCategory={currentCategory} onCategoryChange={setCurrentCategory} />
 
         {/* Loading State */}
         {loading && (
@@ -157,9 +155,7 @@ export default function ModuleLibrary() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 min-h-[400px]">
             <AnimatePresence mode="popLayout">
               {filteredModules.length > 0 ? (
-                filteredModules.map((module) => (
-                  <ModuleCard key={module.id} module={module} />
-                ))
+                filteredModules.map((module) => <ModuleCard key={module.id} module={module} />)
               ) : (
                 <motion.div
                   initial={{ opacity: 0 }}

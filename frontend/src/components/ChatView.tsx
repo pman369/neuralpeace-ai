@@ -77,12 +77,11 @@ const ChatView: React.FC<ChatViewProps> = ({
       className="flex-1 no-scrollbar"
       initialTopMostItemIndex={messages.length - 1}
       itemContent={(index, msg) => (
-        <div className={`px-6 ${index === 0 ? 'pt-6' : ''} ${index === messages.length - 1 ? 'pb-6' : 'pb-6'}`}>
+        <div
+          className={`px-6 ${index === 0 ? 'pt-6' : ''} ${index === messages.length - 1 ? 'pb-6' : 'pb-6'}`}
+        >
           <div className="max-w-3xl mx-auto w-full">
-            <ChatMessageBubble 
-              message={msg} 
-              onCitationClick={onCitationClick}
-            />
+            <ChatMessageBubble message={msg} onCitationClick={onCitationClick} />
           </div>
         </div>
       )}
@@ -112,5 +111,3 @@ const ChatView: React.FC<ChatViewProps> = ({
 };
 
 export default ChatView;
-
-
