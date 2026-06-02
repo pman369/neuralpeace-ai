@@ -1,7 +1,19 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Brain, Mail, Loader2, ArrowLeft, Sparkles, ChevronRight, CheckCircle2, Lock, Key, UserPlus, LogIn } from 'lucide-react';
+import {
+  Brain,
+  Mail,
+  Loader2,
+  ArrowLeft,
+  Sparkles,
+  ChevronRight,
+  CheckCircle2,
+  Lock,
+  Key,
+  UserPlus,
+  LogIn,
+} from 'lucide-react';
 import { sendMagicLink, signUpWithPassword, signInWithPassword } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { ExpertiseLevel } from '../types';
@@ -56,19 +68,19 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
     } else {
       // Calculate final level
       const counts: Record<string, number> = { Novice: 0, Practitioner: 0, Expert: 0, Scholar: 0 };
-      newAnswers.forEach(a => counts[a]++);
-      
+      newAnswers.forEach((a) => counts[a]++);
+
       let maxLevel: ExpertiseLevel = 'Novice';
       let maxCount = -1;
       const levels: ExpertiseLevel[] = ['Novice', 'Practitioner', 'Expert', 'Scholar'];
-      
-      levels.forEach(l => {
+
+      levels.forEach((l) => {
         if (counts[l] >= maxCount) {
           maxCount = counts[l];
           maxLevel = l;
         }
       });
-      
+
       setFinalLevel(maxLevel);
       setStep('result');
     }
@@ -96,7 +108,7 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
       } else {
         result = await signInWithPassword(email.trim(), password);
       }
-      
+
       if (!result.error) {
         navigate('/');
       }
@@ -111,7 +123,7 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -20 }
+    exit: { opacity: 0, y: -20 },
   };
 
   return (
@@ -155,7 +167,8 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
                 Personalized Learning
               </h1>
               <p className="text-on-surface-variant text-sm leading-relaxed mb-8">
-                Welcome to the expert-level neuroscience assistant. To provide the best experience, we need to assess your current expertise level.
+                Welcome to the expert-level neuroscience assistant. To provide the best experience,
+                we need to assess your current expertise level.
               </p>
               <div className="space-y-3">
                 <button
@@ -232,7 +245,8 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
                 Level: <span className="text-primary">{finalLevel}</span>
               </h2>
               <p className="text-on-surface-variant text-sm leading-relaxed mb-8">
-                Based on your responses, we've calibrated your AI assistant to provide information at the **{finalLevel}** level.
+                Based on your responses, we've calibrated your AI assistant to provide information
+                at the **{finalLevel}** level.
               </p>
               <button
                 onClick={() => setStep('email')}
@@ -255,12 +269,16 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
             >
               <div className="mb-6">
                 <h2 className="text-2xl font-extrabold text-on-surface font-headline mb-2">
-                  {authMethod === 'magic' ? 'Almost there' : authMode === 'signup' ? 'Create Account' : 'Welcome Back'}
+                  {authMethod === 'magic'
+                    ? 'Almost there'
+                    : authMode === 'signup'
+                      ? 'Create Account'
+                      : 'Welcome Back'}
                 </h2>
                 <p className="text-on-surface-variant text-sm leading-relaxed">
-                  {authMethod === 'magic' 
+                  {authMethod === 'magic'
                     ? `Sign in with a magic link. We'll save your ${finalLevel} expertise level.`
-                    : authMode === 'signup' 
+                    : authMode === 'signup'
                       ? `Secure your profile with a password. Your ${finalLevel} level will be saved.`
                       : 'Enter your credentials to continue your research.'}
                 </p>
@@ -274,7 +292,9 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
                     setError(null);
                   }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
-                    authMethod === 'magic' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
+                    authMethod === 'magic'
+                      ? 'bg-surface-container-lowest text-primary shadow-sm'
+                      : 'text-on-surface-variant hover:text-on-surface'
                   }`}
                 >
                   <Sparkles size={14} /> Magic Link
@@ -285,7 +305,9 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
                     setError(null);
                   }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
-                    authMethod === 'password' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
+                    authMethod === 'password'
+                      ? 'bg-surface-container-lowest text-primary shadow-sm'
+                      : 'text-on-surface-variant hover:text-on-surface'
                   }`}
                 >
                   <Lock size={14} /> Password
@@ -295,7 +317,10 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
               <form onSubmit={handleAuthSubmit}>
                 <div className="space-y-4 mb-6">
                   <div>
-                    <label htmlFor="email" className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-1.5 ml-1">
+                    <label
+                      htmlFor="email"
+                      className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-1.5 ml-1"
+                    >
                       Email Address
                     </label>
                     <div className="relative">
@@ -321,7 +346,10 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
                       className="space-y-4"
                     >
                       <div>
-                        <label htmlFor="password" className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-1.5 ml-1">
+                        <label
+                          htmlFor="password"
+                          className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-1.5 ml-1"
+                        >
                           Password
                         </label>
                         <div className="relative">
@@ -344,8 +372,8 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
                 </div>
 
                 {error && (
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
+                  <motion.div
+                    initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="mb-4 text-red-500 text-[10px] font-bold uppercase bg-red-500/5 px-3 py-2 rounded-lg border border-red-500/10"
                   >
@@ -361,11 +389,17 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
                   {sending ? (
                     <Loader2 size={18} className="animate-spin" />
                   ) : authMethod === 'magic' ? (
-                    <><Sparkles size={18} /> Send Magic Link</>
+                    <>
+                      <Sparkles size={18} /> Send Magic Link
+                    </>
                   ) : authMode === 'signup' ? (
-                    <><UserPlus size={18} /> Create Account</>
+                    <>
+                      <UserPlus size={18} /> Create Account
+                    </>
                   ) : (
-                    <><LogIn size={18} /> Sign In</>
+                    <>
+                      <LogIn size={18} /> Sign In
+                    </>
                   )}
                 </button>
 
@@ -376,7 +410,9 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
                       onClick={() => setAuthMode(authMode === 'signup' ? 'login' : 'signup')}
                       className="text-[11px] font-bold text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
                     >
-                      {authMode === 'signup' ? 'ALREADY HAVE AN ACCOUNT? SIGN IN' : 'NEED AN ACCOUNT? SIGN UP'}
+                      {authMode === 'signup'
+                        ? 'ALREADY HAVE AN ACCOUNT? SIGN IN'
+                        : 'NEED AN ACCOUNT? SIGN UP'}
                     </button>
                   </div>
                 )}
@@ -401,7 +437,8 @@ export default function OnboardingPage({ onBack }: OnboardingPageProps) {
                 Check your email
               </h2>
               <p className="text-on-surface-variant text-sm mb-6">
-                We've sent a magic link to <br/><span className="text-on-surface font-bold">{email}</span>
+                We've sent a magic link to <br />
+                <span className="text-on-surface font-bold">{email}</span>
               </p>
               <button
                 onClick={() => setStep('email')}

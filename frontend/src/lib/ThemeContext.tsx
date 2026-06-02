@@ -56,17 +56,26 @@ function applyThemeColors(colors: ThemeColors, isDark: boolean) {
 
   // Primary colors
   root.style.setProperty('--color-primary', colors.primary);
-  root.style.setProperty('--color-primary-container', isDark ? lightenColor(colors.primary, 20) : darkenColor(colors.primary, 10));
+  root.style.setProperty(
+    '--color-primary-container',
+    isDark ? lightenColor(colors.primary, 20) : darkenColor(colors.primary, 10)
+  );
   root.style.setProperty('--color-on-primary', isDark ? '#0a1628' : '#ffffff');
 
   // Secondary colors
   root.style.setProperty('--color-secondary', colors.secondary);
-  root.style.setProperty('--color-secondary-container', isDark ? lightenColor(colors.secondary, 20) : darkenColor(colors.secondary, 10));
+  root.style.setProperty(
+    '--color-secondary-container',
+    isDark ? lightenColor(colors.secondary, 20) : darkenColor(colors.secondary, 10)
+  );
   root.style.setProperty('--color-on-secondary', isDark ? '#1a0a2e' : '#ffffff');
 
   // Tertiary colors
   root.style.setProperty('--color-tertiary', colors.tertiary);
-  root.style.setProperty('--color-tertiary-container', isDark ? lightenColor(colors.tertiary, 20) : darkenColor(colors.tertiary, 10));
+  root.style.setProperty(
+    '--color-tertiary-container',
+    isDark ? lightenColor(colors.tertiary, 20) : darkenColor(colors.tertiary, 10)
+  );
   root.style.setProperty('--color-on-tertiary', isDark ? '#2e0a1e' : '#ffffff');
 
   // Surface colors
@@ -97,18 +106,18 @@ function applyThemeColors(colors: ThemeColors, isDark: boolean) {
 
 function lightenColor(hex: string, percent: number): string {
   const num = parseInt(hex.replace('#', ''), 16);
-  const r = Math.min(255, (num >> 16) + Math.round(255 * percent / 100));
-  const g = Math.min(255, ((num >> 8) & 0x00ff) + Math.round(255 * percent / 100));
-  const b = Math.min(255, (num & 0x0000ff) + Math.round(255 * percent / 100));
-  return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+  const r = Math.min(255, (num >> 16) + Math.round((255 * percent) / 100));
+  const g = Math.min(255, ((num >> 8) & 0x00ff) + Math.round((255 * percent) / 100));
+  const b = Math.min(255, (num & 0x0000ff) + Math.round((255 * percent) / 100));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
 function darkenColor(hex: string, percent: number): string {
   const num = parseInt(hex.replace('#', ''), 16);
-  const r = Math.max(0, (num >> 16) - Math.round(255 * percent / 100));
-  const g = Math.max(0, ((num >> 8) & 0x00ff) - Math.round(255 * percent / 100));
-  const b = Math.max(0, (num & 0x0000ff) - Math.round(255 * percent / 100));
-  return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+  const r = Math.max(0, (num >> 16) - Math.round((255 * percent) / 100));
+  const g = Math.max(0, ((num >> 8) & 0x00ff) - Math.round((255 * percent) / 100));
+  const b = Math.max(0, (num & 0x0000ff) - Math.round((255 * percent) / 100));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
 interface ThemeContextType {
@@ -174,9 +183,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   const resetColors = useCallback(() => {
     setTheme((prev) => {
-      const defaults = prev.mode === 'dark' || (prev.mode === 'system' && getSystemTheme() === 'dark')
-        ? DEFAULT_DARK_COLORS
-        : DEFAULT_LIGHT_COLORS;
+      const defaults =
+        prev.mode === 'dark' || (prev.mode === 'system' && getSystemTheme() === 'dark')
+          ? DEFAULT_DARK_COLORS
+          : DEFAULT_LIGHT_COLORS;
       const newTheme = { ...prev, colors: defaults };
       saveTheme(newTheme);
       return newTheme;

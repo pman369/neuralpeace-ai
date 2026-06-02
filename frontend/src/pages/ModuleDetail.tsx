@@ -97,10 +97,7 @@ export default function ModuleDetail() {
         <div className="text-center">
           <p className="text-red-700 font-medium text-lg mb-2">Failed to load module</p>
           <p className="text-red-500 text-sm mb-4">{error}</p>
-          <button
-            onClick={() => navigate('/')}
-            className="text-primary font-bold hover:underline"
-          >
+          <button onClick={() => navigate('/')} className="text-primary font-bold hover:underline">
             Back to Library
           </button>
         </div>
@@ -134,7 +131,9 @@ export default function ModuleDetail() {
         >
           {/* Tags */}
           <div className="flex flex-wrap gap-2 mb-4">
-            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${categoryColors[module.category]}`}>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${categoryColors[module.category]}`}
+            >
               <Tag size={12} className="inline mr-1 -mt-0.5" />
               {module.category}
             </span>
@@ -208,9 +207,24 @@ export default function ModuleDetail() {
           © 2024 NeuralPeace AI. Educational use only. Not medical advice.
         </p>
         <div className="flex gap-6">
-          <a href="#" className="text-on-surface-variant/60 font-body text-xs hover:text-primary underline transition-all">Privacy</a>
-          <a href="#" className="text-on-surface-variant/60 font-body text-xs hover:text-primary underline transition-all">Terms</a>
-          <a href="#" className="text-on-surface-variant/60 font-body text-xs hover:text-primary underline transition-all">Support</a>
+          <a
+            href="#"
+            className="text-on-surface-variant/60 font-body text-xs hover:text-primary underline transition-all"
+          >
+            Privacy
+          </a>
+          <a
+            href="#"
+            className="text-on-surface-variant/60 font-body text-xs hover:text-primary underline transition-all"
+          >
+            Terms
+          </a>
+          <a
+            href="#"
+            className="text-on-surface-variant/60 font-body text-xs hover:text-primary underline transition-all"
+          >
+            Support
+          </a>
         </div>
       </footer>
     </div>

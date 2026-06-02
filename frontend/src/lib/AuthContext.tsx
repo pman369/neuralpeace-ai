@@ -9,7 +9,10 @@ export interface UserProfile {
   email: string;
   expertise_level: string | null;
   avatar_url: string | null;
+  active_session_id: string | null;
   created_at: string;
+  reputation_score: number;
+  badges: string[];
 }
 
 interface AuthContextType {
@@ -50,7 +53,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession()
+    supabase.auth
+      .getSession()
       .then(async ({ data: { session: s } }) => {
         setSession(s);
         setUser(s?.user ?? null);
@@ -64,7 +68,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       })
       .catch((err) => {
-        console.error("Auth initialization error:", err);
+        console.error('Auth initialization error:', err);
       })
       .finally(() => {
         setLoading(false);

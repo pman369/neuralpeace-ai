@@ -4,6 +4,30 @@ import { motion } from 'motion/react';
 import { ArrowRight, Zap, Microscope, Brain, Activity } from 'lucide-react';
 import { Module } from '../types';
 
+/** Strip common markdown syntax tokens for plain-text card previews. */
+function stripMarkdown(text: string): string {
+  return (
+    text
+      // Remove headings (##, ###, etc.)
+      .replace(/^#{1,6}\s+/gm, '')
+      // Remove bold/italic (**text**, *text*, __text__, _text_)
+      .replace(/[*_]{1,3}(.*?)[*_]{1,3}/g, '$1')
+      // Remove inline code
+      .replace(/`([^`]+)`/g, '$1')
+      // Remove link syntax [text](url)
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+      // Remove blockquote markers
+      .replace(/^>\s*/gm, '')
+      // Remove list markers
+      .replace(/^[-*+]\s+/gm, '')
+      .replace(/^\d+\.\s+/gm, '')
+      // Collapse multiple spaces/newlines
+      .replace(/\n{2,}/g, ' ')
+      .replace(/\n/g, ' ')
+      .trim()
+  );
+}
+
 interface ModuleCardProps {
   module: Module;
 }
@@ -33,7 +57,9 @@ const ModuleCard: FC<ModuleCardProps> = ({ module }) => {
       className="group bg-surface-container-lowest rounded-xl p-6 flex flex-col h-full border border-outline-variant/15 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300"
     >
       <div className="flex justify-between items-start mb-4">
-        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${categoryStyles[module.category]}`}>
+        <span
+          className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${categoryStyles[module.category]}`}
+        >
           {module.category}
         </span>
         <span className="flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/5 px-2 py-1 rounded-md">
@@ -43,8 +69,8 @@ const ModuleCard: FC<ModuleCardProps> = ({ module }) => {
       </div>
 
       <div className="w-full h-40 mb-5 overflow-hidden rounded-lg">
-        <img 
-          src={module.imageUrl} 
+        <img
+          src={module.imageUrl}
           alt={module.title}
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -54,9 +80,9 @@ const ModuleCard: FC<ModuleCardProps> = ({ module }) => {
       <h3 className="text-xl font-bold text-on-surface mb-2 group-hover:text-primary transition-colors">
         {module.title}
       </h3>
-      
+
       <p className="text-on-surface-variant text-sm leading-relaxed mb-6 flex-grow">
-        {module.description}
+        {stripMarkdown(module.description)}
       </p>
 
       <div className="flex items-center justify-between pt-4 border-t border-outline-variant/10">

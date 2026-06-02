@@ -18,7 +18,8 @@ export const mockCitations: Citation[] = [
     year: 2021,
   },
   {
-    title: 'Bear, M. F., Connors, B. W., & Paradiso, M. A. (2020). Neuroscience: Exploring the Brain (4th ed.)',
+    title:
+      'Bear, M. F., Connors, B. W., & Paradiso, M. A. (2020). Neuroscience: Exploring the Brain (4th ed.)',
     year: 2020,
   },
 ];

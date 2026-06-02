@@ -14,7 +14,7 @@ export default function Sidebar({ currentLevel, onLevelChange }: SidebarProps) {
         <div className="text-lg font-semibold text-on-surface">Expertise</div>
         <div className="text-xs text-on-surface-variant">Adjust AI depth</div>
       </div>
-      
+
       <nav className="space-y-1">
         {EXPERTISE_LEVELS.map((item) => {
           const isActive = currentLevel === item.level;
@@ -25,15 +25,14 @@ export default function Sidebar({ currentLevel, onLevelChange }: SidebarProps) {
               onClick={() => onLevelChange(item.level)}
               className={`
                 flex items-center gap-3 px-3 py-2 cursor-pointer rounded-lg transition-all duration-200
-                ${isActive 
-                  ? 'bg-surface-container-lowest text-primary font-semibold shadow-sm' 
-                  : 'text-on-surface-variant hover:bg-surface-container-high'
+                ${
+                  isActive
+                    ? 'bg-surface-container-lowest text-primary font-semibold shadow-sm'
+                    : 'text-on-surface-variant hover:bg-surface-container-high'
                 }
               `}
             >
-              <span className="material-symbols-outlined text-[20px]">
-                {item.icon}
-              </span>
+              <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
               <span>{item.level}</span>
             </motion.div>
           );

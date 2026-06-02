@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { Settings, Brain, Palette, Menu, X, Library, MessageSquare, MessagesSquare } from 'lucide-react';
+import {
+  Settings,
+  Brain,
+  Palette,
+  Menu,
+  X,
+  Library,
+  MessageSquare,
+  MessagesSquare,
+} from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import UserMenu from './UserMenu';
@@ -21,7 +30,7 @@ export default function TopNav() {
     <>
       <nav className="fixed top-0 w-full z-50 bg-surface/70 backdrop-blur-xl flex justify-between items-center px-4 md:px-8 h-16 border-b border-outline-variant/10">
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => setMobileMenuOpen(true)}
             className="md:hidden p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors"
           >
@@ -38,7 +47,7 @@ export default function TopNav() {
         </div>
 
         <div className="hidden md:flex items-center gap-8 font-headline tracking-tight">
-          {navLinks.map(link => (
+          {navLinks.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
@@ -46,7 +55,7 @@ export default function TopNav() {
                 `pb-1 transition-colors duration-200 px-3 py-1 rounded-lg ${
                   isActive
                     ? 'text-primary border-b-2 border-primary font-bold'
-                    : 'text-on-surface-variant font-medium hover:text-primary hover:bg-surface-container-low'     
+                    : 'text-on-surface-variant font-medium hover:text-primary hover:bg-surface-container-low'
                 }`
               }
             >
@@ -103,7 +112,7 @@ export default function TopNav() {
                   </div>
                   <span className="font-bold text-primary font-headline">NeuralPeace</span>
                 </div>
-                <button 
+                <button
                   onClick={() => setMobileMenuOpen(false)}
                   className="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full"
                 >
@@ -112,7 +121,7 @@ export default function TopNav() {
               </div>
 
               <div className="flex-1 p-4 flex flex-col gap-2">
-                {navLinks.map(link => {
+                {navLinks.map((link) => {
                   const isActive = location.pathname === link.to;
                   return (
                     <NavLink
@@ -120,8 +129,8 @@ export default function TopNav() {
                       to={link.to}
                       onClick={() => setMobileMenuOpen(false)}
                       className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${
-                        isActive 
-                          ? 'bg-primary/10 text-primary font-bold' 
+                        isActive
+                          ? 'bg-primary/10 text-primary font-bold'
                           : 'text-on-surface-variant hover:bg-surface-container-low'
                       }`}
                     >
@@ -146,4 +155,3 @@ export default function TopNav() {
     </>
   );
 }
-

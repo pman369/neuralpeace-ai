@@ -5,17 +5,18 @@ An expert-level neuroscience AI assistant that provides adaptive, ethically-grou
 ## Features
 
 - 🧠 **Adaptive Expertise**: Responses adjust from novice to scholar level (Novice, Practitioner, Expert, Scholar).
-- 📚 **Peer-Reviewed Citations**: All claims backed by real-time citations via Perplexity AI.
+- 📚 **Peer-Reviewed Citations**: All claims backed by real-time citations via Gemini AI and Semantic Scholar.
 - ⚖️ **Ethical Guardrails**: Built-in detection for medical advice with mandatory educational disclaimers.
 - 📖 **Knowledge Modules**: Structured learning library across Neuroanatomy, Methods, Computational models, etc.
 - 🤖 **Supabase Powered**: Uses Supabase Edge Functions for secure AI orchestration and Postgres for knowledge storage.
 - 🧠 **3D Brain Atlas**: Integrated interactive brain visualization for spatial context.
+- ✨ **Intelligent Atlas Trigger**: Automated UI orchestration that auto-opens and highlights brain regions based on chat context (e.g., mentioning "prefrontal cortex" triggers the visualizer).
 
 ## Tech Stack
 
 - **Frontend**: React 19, Vite, Tailwind CSS 4, Three.js, Framer Motion.
 - **Backend**: Supabase (PostgreSQL, Auth, Edge Functions, Vector search).
-- **AI**: Perplexity API (Sonar models) and GTE-small embeddings.
+- **AI**: Gemini API (1.5 Flash/Pro) and GTE-small embeddings.
 
 ## Getting Started
 
@@ -55,8 +56,9 @@ The backend logic is contained in Supabase Edge Functions.
     ```
 2.  **Set Secrets**:
     ```bash
-    supabase secrets set PERPLEXITY_API_KEY=your_key
-    supabase secrets set PERPLEXITY_MODEL=sonar
+    supabase secrets set GEMINI_API_KEY=your_key
+    supabase secrets set GEMINI_MODEL=gemini-1.5-flash
+    supabase secrets set ALLOWED_ORIGINS=https://your-domain.com,http://localhost:5173
     ```
 
 ## Project Structure
