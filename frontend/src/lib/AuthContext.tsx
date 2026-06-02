@@ -53,7 +53,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession()
+    supabase.auth
+      .getSession()
       .then(async ({ data: { session: s } }) => {
         setSession(s);
         setUser(s?.user ?? null);
@@ -67,7 +68,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       })
       .catch((err) => {
-        console.error("Auth initialization error:", err);
+        console.error('Auth initialization error:', err);
       })
       .finally(() => {
         setLoading(false);

@@ -14,7 +14,7 @@ interface State {
 class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    error: null
+    error: null,
   };
 
   public static getDerivedStateFromError(error: Error): State {
@@ -37,7 +37,8 @@ class ErrorBoundary extends Component<Props, State> {
         <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center">
           <h2 className="text-2xl font-bold text-red-500 mb-4">Something went wrong</h2>
           <p className="text-on-surface-variant max-w-md mb-6">
-            Establishing a clear neural connection failed. Please try refreshing the page or contact support if the problem persists.
+            Establishing a clear neural connection failed. Please try refreshing the page or contact
+            support if the problem persists.
           </p>
           <pre className="bg-surface-variant p-4 rounded text-xs overflow-auto max-w-full text-left">
             {this.state.error?.message}

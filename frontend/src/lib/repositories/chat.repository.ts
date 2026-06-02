@@ -76,10 +76,7 @@ export async function updateSessionMetadata(
   sessionId: string,
   updates: { title?: string; message_count?: number }
 ): Promise<void> {
-  const { error } = await supabase
-    .from('chat_sessions')
-    .update(updates)
-    .eq('id', sessionId);
+  const { error } = await supabase.from('chat_sessions').update(updates).eq('id', sessionId);
   if (error) console.error('Error updating session:', error);
 }
 

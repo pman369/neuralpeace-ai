@@ -77,12 +77,14 @@ export async function signOut(): Promise<{ error: string | null }> {
  */
 export async function updateProfile(
   userId: string,
-  updates: { display_name?: string; expertise_level?: string; avatar_url?: string; active_session_id?: string | null }
+  updates: {
+    display_name?: string;
+    expertise_level?: string;
+    avatar_url?: string;
+    active_session_id?: string | null;
+  }
 ): Promise<{ error: string | null }> {
-  const { error } = await supabase
-    .from('profiles')
-    .update(updates)
-    .eq('id', userId);
+  const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
   return { error: error?.message ?? null };
 }
 

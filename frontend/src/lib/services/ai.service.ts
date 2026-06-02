@@ -112,9 +112,7 @@ export async function* generateAIResponseStream(
  * Call the AI backend to generate a response.
  * Falls back to a mock response if the edge function is unavailable.
  */
-export async function generateAIResponse(
-  request: ChatRequest
-): Promise<ChatResponse> {
+export async function generateAIResponse(request: ChatRequest): Promise<ChatResponse> {
   try {
     const { data, error } = await supabase.functions.invoke('chat', {
       body: request,

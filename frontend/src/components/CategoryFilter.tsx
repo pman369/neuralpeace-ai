@@ -19,9 +19,10 @@ export default function CategoryFilter({ currentCategory, onCategoryChange }: Ca
             onClick={() => onCategoryChange(category)}
             className={`
               px-5 py-2 rounded-full font-medium text-sm transition-all duration-200 whitespace-nowrap
-              ${isActive 
-                ? 'bg-primary text-on-primary shadow-md shadow-primary/20' 
-                : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
+              ${
+                isActive
+                  ? 'bg-primary text-on-primary shadow-md shadow-primary/20'
+                  : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
               }
             `}
           >

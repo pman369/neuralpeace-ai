@@ -9,6 +9,7 @@ class PipelineSingleton {
   static model = 'Supabase/gte-small';
   static instance: any = null;
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   static async getInstance(progress_callback: Function) {
     if (this.instance === null) {
       this.instance = await pipeline(this.task, this.model, { progress_callback });

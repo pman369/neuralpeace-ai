@@ -27,13 +27,13 @@ self.addEventListener('message', async (event) => {
 
     // Fallacy labels to detect
     const candidate_labels = [
-      'ad hominem', 
-      'strawman', 
-      'overgeneralization', 
-      'logical argument', 
-      'opinion'
+      'ad hominem',
+      'strawman',
+      'overgeneralization',
+      'logical argument',
+      'opinion',
     ];
-    
+
     // Perform zero-shot classification
     const output = await classifier(text, candidate_labels, { multi_label: true });
 
@@ -51,14 +51,14 @@ self.addEventListener('message', async (event) => {
     self.postMessage({
       status: 'complete',
       messageId,
-      fallacies: detectedFallacies
+      fallacies: detectedFallacies,
     });
   } catch (err) {
     console.error('Fallacy Worker Error:', err);
     self.postMessage({
       status: 'error',
       messageId,
-      error: String(err)
+      error: String(err),
     });
   }
 });

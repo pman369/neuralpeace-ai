@@ -5,10 +5,10 @@ import { updateActiveSession } from '../lib/auth';
 import ChatInput from '../components/ChatInput';
 import ChatHistory from '../components/ChatHistory';
 import ExpertiseSelector from '../components/ExpertiseSelector';
-import AtlasSidebar from '../components/AtlasSidebar';
 import ChatView from '../components/ChatView';
 
-// Lazy load CitationPanel
+// Lazy load heavy AtlasSidebar and CitationPanel
+const AtlasSidebar = lazy(() => import('../components/AtlasSidebar'));
 const CitationPanel = lazy(() => import('../components/CitationPanel'));
 
 import type { BrainRegion } from '../components/BrainAtlas';
@@ -37,9 +37,17 @@ export default function ChatPage() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [atlasOpen, setAtlasOpen] = useState(false);
+  const [hasOpenedAtlas, setHasOpenedAtlas] = useState(false);
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
   const [highlightRegion, setHighlightRegion] = useState<BrainRegion>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+
+  // Track if atlas visualizer has been activated at least once to defer loading heavy Three.js chunks
+  useEffect(() => {
+    if (atlasOpen) {
+      setHasOpenedAtlas(true);
+    }
+  }, [atlasOpen]);
 
   // Intelligent Atlas Triggers & Region Highlighting
   useEffect(() => {
@@ -47,10 +55,14 @@ export default function ChatPage() {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === 'assistant') {
         const content = lastMessage.content.toLowerCase();
-        
+
         // Auto-open atlas for anatomical responses
-        if (content.includes('🎨') || content.includes('visualize') || content.includes('metaphor')) {
-          setAtlasOpen(true);
+        if (
+          content.includes('🎨') ||
+          content.includes('visualize') ||
+          content.includes('metaphor')
+        ) {
+          setTimeout(() => setAtlasOpen(true), 0);
         }
 
         // Region detection
@@ -72,36 +84,39 @@ export default function ChatPage() {
   }, [messages]);
 
   // Initialize a session
-  const initSession = useCallback(async (sessionId?: string, expertise?: string) => {
-    try {
-      const id = sessionId || createSessionId();
-      const level = expertise || ((profile?.expertise_level as ExpertiseLevel) ?? 'Expert');
-      
-      setCurrentSessionId(id);
-      setExpertiseLevel(level as ExpertiseLevel);
+  const initSession = useCallback(
+    async (sessionId?: string, expertise?: string) => {
+      try {
+        const id = sessionId || createSessionId();
+        const level = expertise || ((profile?.expertise_level as ExpertiseLevel) ?? 'Expert');
 
-      // Create in DB if it's a new random ID
-      if (!sessionId) {
-        await createChatSession(id, level, undefined, user?.id);
+        setCurrentSessionId(id);
+        setExpertiseLevel(level as ExpertiseLevel);
+
+        // Create in DB if it's a new random ID
+        if (!sessionId) {
+          await createChatSession(id, level, undefined, user?.id);
+        }
+
+        // Load history
+        const history = await fetchConversationHistory(id);
+        setMessages(history);
+
+        // Persist as active session if authenticated
+        if (user?.id && sessionId !== profile?.active_session_id) {
+          await updateActiveSession(user.id, id);
+          // We don't necessarily need to refresh the whole profile here,
+          // as we already have the state updated locally via setCurrentSessionId
+        }
+      } catch (err) {
+        console.error('Error initializing session:', err);
+      } finally {
+        setLoading(false);
+        setIsInitializing(false);
       }
-
-      // Load history
-      const history = await fetchConversationHistory(id);
-      setMessages(history);
-
-      // Persist as active session if authenticated
-      if (user?.id && sessionId !== profile?.active_session_id) {
-        await updateActiveSession(user.id, id);
-        // We don't necessarily need to refresh the whole profile here, 
-        // as we already have the state updated locally via setCurrentSessionId
-      }
-    } catch (err) {
-      console.error('Error initializing session:', err);
-    } finally {
-      setLoading(false);
-      setIsInitializing(false);
-    }
-  }, [profile?.expertise_level, profile?.active_session_id, user?.id]);
+    },
+    [profile, user]
+  );
 
   // Load initial session on mount (prioritize active session from profile)
   useEffect(() => {
@@ -139,11 +154,14 @@ export default function ChatPage() {
     setHistoryOpen(false);
   }, [initSession]);
 
-  const handleSelectSession = useCallback(async (sessionId: string) => {
-    setLoading(true);
-    await initSession(sessionId);
-    setHistoryOpen(false);
-  }, [initSession]);
+  const handleSelectSession = useCallback(
+    async (sessionId: string) => {
+      setLoading(true);
+      await initSession(sessionId);
+      setHistoryOpen(false);
+    },
+    [initSession]
+  );
 
   const handleSend = useCallback(
     async (content: string) => {
@@ -164,7 +182,9 @@ export default function ChatPage() {
         const isFirstMessage = messages.length === 0;
         await updateSessionMetadata(currentSessionId, {
           message_count: messages.length + 2,
-          ...(isFirstMessage && { title: content.slice(0, 50) + (content.length > 50 ? '...' : '') }),
+          ...(isFirstMessage && {
+            title: content.slice(0, 50) + (content.length > 50 ? '...' : ''),
+          }),
         });
 
         const assistantMsgId = crypto.randomUUID();
@@ -186,7 +206,10 @@ export default function ChatPage() {
         try {
           queryEmbedding = await generateEmbedding(content);
         } catch (embedErr) {
-          console.warn('Local embedding generation failed, falling back to edge embedding:', embedErr);
+          console.warn(
+            'Local embedding generation failed, falling back to edge embedding:',
+            embedErr
+          );
         }
 
         const stream = generateAIResponseStream({
@@ -203,17 +226,13 @@ export default function ChatPage() {
           if (chunk.content !== undefined) {
             finalContent = chunk.content;
             setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMsgId ? { ...m, content: finalContent } : m
-              )
+              prev.map((m) => (m.id === assistantMsgId ? { ...m, content: finalContent } : m))
             );
           }
           if (chunk.citations !== undefined) {
             finalCitations = chunk.citations;
             setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMsgId ? { ...m, citations: finalCitations } : m
-              )
+              prev.map((m) => (m.id === assistantMsgId ? { ...m, citations: finalCitations } : m))
             );
           }
         }
@@ -272,10 +291,11 @@ export default function ChatPage() {
           handleSend={handleSend}
         />
 
-        <AtlasSidebar
-          isOpen={atlasOpen}
-          highlightRegion={highlightRegion}
-        />
+        {hasOpenedAtlas && (
+          <Suspense fallback={null}>
+            <AtlasSidebar isOpen={atlasOpen} highlightRegion={highlightRegion} />
+          </Suspense>
+        )}
       </div>
 
       <div className="max-w-5xl mx-auto w-full">
@@ -285,10 +305,7 @@ export default function ChatPage() {
       <AnimatePresence>
         {selectedCitation && (
           <Suspense fallback={null}>
-            <CitationPanel
-              citation={selectedCitation}
-              onClose={() => setSelectedCitation(null)}
-            />
+            <CitationPanel citation={selectedCitation} onClose={() => setSelectedCitation(null)} />
           </Suspense>
         )}
       </AnimatePresence>
