@@ -1,6 +1,6 @@
 -- Add columns to profiles
 ALTER TABLE public.profiles
-ADD COLUMN IF NOT EXISTS reputation_score INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS reputation INTEGER DEFAULT 0,
 ADD COLUMN IF NOT EXISTS badges JSONB DEFAULT '[]'::jsonb;
 
 -- Create function to award reputation
@@ -13,8 +13,8 @@ DECLARE
     rep_earned INT;
     new_badge TEXT;
 BEGIN
-    -- Only trigger if status changed to 'closed'
-    IF NEW.status = 'closed' AND OLD.status != 'closed' THEN
+    -- Only trigger if status changed to 'finished'
+    IF NEW.status = 'finished' AND OLD.status != 'finished' THEN
         -- Loop through all unique participants in this debate
         FOR participant IN 
             SELECT user_id, COUNT(*) as arg_count, AVG(fact_check_score) as avg_score 
@@ -46,7 +46,7 @@ BEGIN
             -- Update profile
             UPDATE public.profiles
             SET 
-                reputation_score = reputation_score + rep_earned,
+                reputation = reputation + rep_earned,
                 badges = CASE 
                             WHEN new_badge IS NOT NULL AND NOT (badges @> to_jsonb(new_badge)) 
                             THEN badges || to_jsonb(new_badge)

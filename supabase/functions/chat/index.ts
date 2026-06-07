@@ -7,6 +7,8 @@ import { performHybridRAG } from './rag.ts';
 import { analyzeMessage } from './guardrails.ts';
 import { enqueueGemini } from './batcher.ts';
 import { getPersonaPrompt } from './prompts.ts';
+import { chatRateLimiter } from './rateLimiter.ts';
+import { validateChatRequest } from './validator.ts';
 
 import { ExpertiseLevel } from './types.ts';
 import { corsHeaders } from '../_shared/cors.ts';
@@ -49,13 +51,40 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized: Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    // Rate Limiting
+    const rateLimitKey = user.id || req.headers.get('x-forwarded-for') || 'anonymous';
+    if (chatRateLimiter.isLimitExceeded(rateLimitKey)) {
+      logger.warn('Rate limit exceeded', { userId: user.id });
+      return new Response(
+        JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Admin client for global cache (if needed to bypass cache RLS)
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-    const body: ChatRequest & { queryEmbedding?: number[] } = await req.json();
-    const { message, expertiseLevel, conversationHistory, stream = true, queryEmbedding: clientEmbedding } = body;
+    // Payload Parsing & Validation
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON payload' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    if (!message) return new Response(JSON.stringify({ error: 'Message required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const valErrors = validateChatRequest(body);
+    if (valErrors.length > 0) {
+      logger.warn('Validation failed', { errors: valErrors });
+      return new Response(
+        JSON.stringify({ error: 'Validation failed', details: valErrors }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { message, expertiseLevel, conversationHistory, stream = true, queryEmbedding: clientEmbedding } = body;
 
     // 1. Caching
     const cacheKey = await getHash(`${expertiseLevel}:${message}`);
