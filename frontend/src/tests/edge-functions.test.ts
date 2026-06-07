@@ -96,3 +96,60 @@ describe('Edge Function: Chat - Lens (Expertise Detection)', () => {
     expect(result.reasoning).toBe('Philosophical framing detected');
   });
 });
+
+import { validateChatRequest } from '../../../supabase/functions/chat/validator';
+import { enqueueGemini } from '../../../supabase/functions/chat/batcher';
+
+describe('Edge Function: Chat - Validator', () => {
+  it('should flag empty message', () => {
+    const errors = validateChatRequest({ message: '' });
+    expect(errors.some(e => e.field === 'message')).toBe(true);
+  });
+
+  it('should flag invalid expertise level', () => {
+    const errors = validateChatRequest({ message: 'Hello', expertiseLevel: 'InvalidLevel' });
+    expect(errors.some(e => e.field === 'expertiseLevel')).toBe(true);
+  });
+
+  it('should validate correctly formatted request', () => {
+    const errors = validateChatRequest({
+      message: 'Hello World',
+      expertiseLevel: 'Expert',
+      conversationHistory: [{ role: 'user', content: 'Hi' }]
+    });
+    expect(errors.length).toBe(0);
+  });
+
+  it('should flag overly long message', () => {
+    const errors = validateChatRequest({ message: 'a'.repeat(2001) });
+    expect(errors.some(e => e.field === 'message')).toBe(true);
+  });
+});
+
+describe('Edge Function: Chat - Batcher', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should batch requests and resolve them in parallel', async () => {
+    const mockResponse = {
+      choices: [{ message: { content: 'Mocked Gemini response' } }],
+    };
+
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const p1 = enqueueGemini([{ role: 'user', content: 'test1' }], false, 'key', 'model');
+    const p2 = enqueueGemini([{ role: 'user', content: 'test2' }], false, 'key', 'model');
+
+    const [r1, r2] = await Promise.all([p1, p2]);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(r1.content).toBe('Mocked Gemini response');
+    expect(r2.content).toBe('Mocked Gemini response');
+  });
+});
+
