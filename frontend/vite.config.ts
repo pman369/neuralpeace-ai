@@ -16,6 +16,35 @@ export default defineConfig(({mode}) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('@sentry')) {
+                return 'vendor-sentry';
+              }
+              if (id.includes('@supabase')) {
+                return 'vendor-supabase';
+              }
+              if (id.includes('motion')) {
+                return 'vendor-motion';
+              }
+              if (id.includes('lucide-react')) {
+                return 'vendor-lucide';
+              }
+              if (
+                id.includes('react-router-dom') ||
+                id.includes('@remix-run') ||
+                id.includes('react-router')
+              ) {
+                return 'vendor-router';
+              }
+            }
+          },
+        },
+      },
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâ€”file watching is disabled to prevent flickering during agent edits.
