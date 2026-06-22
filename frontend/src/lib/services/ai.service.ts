@@ -54,9 +54,10 @@ export async function* generateAIResponseStream(
   try {
     const { data, error } = await supabase.functions.invoke('chat', {
       body: { ...request, stream: true },
+      parseResponse: false,
     });
 
-    if (error || !data || !(data instanceof ReadableStream)) {
+    if (error || !data || !data.body) {
       console.warn('Edge function streaming unavailable, using fallback:', error);
       Sentry.captureException(error || new Error('Edge function streaming unavailable'));
       const fallback = getFallbackResponse(request);
@@ -64,7 +65,7 @@ export async function* generateAIResponseStream(
       return;
     }
 
-    const reader = data.getReader();
+    const reader = data.body.getReader();
     const decoder = new TextDecoder();
     let accumulatedContent = '';
 
