@@ -109,7 +109,7 @@ serve(async (req) => {
 
     // 2. Parallel RAG and Coalesced Message Analysis (Combined Intent, Safety, & Expertise Detection)
     const tasks: Promise<any>[] = [
-      performHybridRAG(supabase, message, clientEmbedding),
+      performHybridRAG(supabaseAdmin, message, clientEmbedding),
       analyzeMessage(message, GEMINI_API_KEY!, expertiseLevel === 'Auto', GEMINI_MODEL)
     ];
 
