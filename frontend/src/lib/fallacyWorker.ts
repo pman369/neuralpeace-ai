@@ -3,6 +3,9 @@ import { pipeline, env } from '@xenova/transformers';
 // Skip local model checks since we are running in the browser
 env.allowLocalModels = false;
 
+// Point to locally hosted WASM/MJS files to avoid CDN/CORS issues
+env.wasm.wasmPaths = '/wasm/';
+
 class PipelineSingleton {
   static task = 'zero-shot-classification' as const;
   static model = 'Xenova/mobilebert-uncased-mnli';

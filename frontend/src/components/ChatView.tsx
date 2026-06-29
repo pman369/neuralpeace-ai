@@ -75,6 +75,7 @@ const ChatView: React.FC<ChatViewProps> = ({
       ref={virtuosoRef}
       data={messages}
       className="flex-1 no-scrollbar"
+      computeItemKey={(index, msg) => msg.id}
       initialTopMostItemIndex={messages.length - 1}
       itemContent={(index, msg) => (
         <div

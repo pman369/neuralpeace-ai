@@ -4,6 +4,9 @@ import { pipeline, env } from '@xenova/transformers';
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
+// Point to locally hosted WASM/MJS files to avoid CDN/CORS issues
+env.wasm.wasmPaths = '/wasm/';
+
 class PipelineSingleton {
   static task = 'feature-extraction' as const;
   static model = 'Supabase/gte-small';
