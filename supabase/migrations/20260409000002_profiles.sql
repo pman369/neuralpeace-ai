@@ -38,7 +38,7 @@ BEGIN
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Trigger on auth.users insert
 CREATE TRIGGER on_auth_user_created
