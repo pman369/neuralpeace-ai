@@ -1,15 +1,23 @@
 import os
 import re
 import json
-import requests
-from supabase import create_client, Client
+try:
+    import requests
+except ImportError:
+    requests = None
+
+try:
+    from supabase import create_client, Client
+except ImportError:
+    create_client = None
+    Client = object
 
 # Configuration - should be set via environment variables
 SUPABASE_URL = os.environ.get('SUPABASE_URL') or os.environ.get('VITE_SUPABASE_URL')
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
 
-if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
-    print("Warning: Missing Supabase credentials. Script will only parse files.")
+if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY or create_client is None:
+    print("Warning: Missing Supabase credentials or supabase package. Script will only parse files.")
     supabase: Client = None
 else:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -41,22 +49,10 @@ def parse_markdown(file_path):
     if not h1_match:
         return None
     
-    # Check for title map or exact match
+    # Curated metadata is keyed by the H1 title (the canonical module name)
     module_title_raw = h1_match.group(1).strip()
-    
-    # Simple extraction of metadata from top of file if it exists, or defaults
     meta = MODULE_METADATA.get(module_title_raw)
-    
-    # If not exactly matching the title in the file, check if filename matches any key
-    if not meta:
-        base_name = os.path.basename(file_path).replace('.md', '')
-        meta = MODULE_METADATA.get(base_name)
-        if meta:
-            module_title = base_name
-        else:
-            module_title = module_title_raw
-    else:
-        module_title = module_title_raw
+    module_title = module_title_raw
         
     intro_pattern = r'^#\s+.*?\n+(.*?)(?=\n##\s+|\Z)'
     intro_match = re.search(intro_pattern, content, re.MULTILINE | re.DOTALL)
@@ -152,6 +148,10 @@ def sync_module(module_data):
 
 def trigger_embedding(section_id):
     if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        return
+
+    if requests is None:
+        print("    Skipping embedding trigger: 'requests' package not installed")
         return
 
     url = f"{SUPABASE_URL}/functions/v1/embed-knowledge"
